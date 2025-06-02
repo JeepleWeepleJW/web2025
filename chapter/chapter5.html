@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Chapter5</title>
+    <style>
+        /* 코드 블록 배경 및 강조 색 지정 */
+        pre {
+            background-color: #f0f8ff;
+            border-left: 4px solid #4682b4;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        code {
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+<h1>챕터5</h1>
+
+<section>
+    <h2>querySelector()</h2>
+    <pre><code>document.querySelector('선택자');</code></pre>
+    <pre><code>document.querySelector('#container');</code></pre>
+    <pre><code>document.querySelector('#profile img');</code></pre>
+</section>
+
+<section>
+    <h2>querySelectorAll()</h2>
+    <pre><code>document.querySelectorAll('.user');</code></pre>
+</section>
+
+<section>
+    <h2>웹 요소 가져오기</h2>
+    <pre><code>element.innerText</code></pre>
+    <pre><code>element.innerHTML</code></pre>
+    <pre><code>element.textContent</code></pre>
+</section>
+
+<section>
+    <h2>웹 요소 내용 수정하기</h2>
+    <pre><code>element.innerText = '새 텍스트';</code></pre>
+    <pre><code>element.innerHTML = '&lt;strong&gt;굵게&lt;/strong&gt;';</code></pre>
+    <pre><code>element.textContent = '모든 텍스트 포함';</code></pre>
+    <pre><code>imageElement.src = 'new-image.jpg';</code></pre>
+</section>
+
+<section>
+    <h2>요소 클릭 시 내용 변경</h2>
+    <pre><code>button.onclick = function() {
+    element.innerText = '클릭됨!';
+};</code></pre>
+</section>
+
+<section>
+    <h2>CSS 속성 접근 및 수정</h2>
+    <pre><code>element.style.color = 'red';</code></pre>
+    <pre><code>element.style.backgroundColor = '#f0f0f0';</code></pre>
+</section>
+
+<section>
+    <h2>클래스 추가·삭제·토글</h2>
+    <pre><code>element.classList.add('active');</code></pre>
+    <pre><code>element.classList.remove('hidden');</code></pre>
+    <pre><code>element.classList.toggle('expanded');</code></pre>
+</section>
+
+<section>
+    <h2>폼 요소에 접근하기</h2>
+    <pre><code>// 텍스트 필드 값 가져오기
+inputElement.value;</code></pre>
+    <pre><code>// name 속성으로 접근
+document.testForm.subject;</code></pre>
+</section>
+
+<section>
+    <h2>폼 배열 사용하기</h2>
+    <pre><code>document.forms;            // 모든 폼
+document.forms[0].elements; // 첫 번째 폼의 요소들</code></pre>
+</section>
+
+<section>
+    <h2>선택 목록 (&lt;select&gt;) 접근</h2>
+    <pre><code>const selectMenu = document.querySelector('#major');
+selectMenu.options;
+selectMenu.selectedIndex;</code></pre>
+    <pre><code>selectMenu.onchange = function() {
+    alert(`[${selectMenu.options[selectMenu.selectedIndex].innerText}]를 선택했습니다.`);
+};</code></pre>
+</section>
+
+<section>
+    <h2>라디오 버튼과 체크박스</h2>
+    <pre><code>&lt;form name="testForm"&gt;
+  &lt;input type="radio" name="subject" value="speaking"&gt;
+  &lt;input type="radio" name="subject" value="grammar"&gt;
+  &lt;input type="radio" name="subject" value="writing"&gt;
+
+  &lt;input type="checkbox" name="mailing" value="news"&gt;
+  &lt;input type="checkbox" name="mailing" value="dialog"&gt;
+  &lt;input type="checkbox" name="mailing" value="pops"&gt;
+&lt;/form&gt;</code></pre>
+    <pre><code>// 선택된 라디오
+const selectedSubject = document.querySelector("input[name='subject']:checked").value;
+
+// 선택된 체크박스들
+const selectedMailing = Array.from(document.querySelectorAll("input[name='mailing']:checked"))
+    .map(el => el.value);</code></pre>
+</section>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Chapter6</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #eee;
+        }
+    </style>
+</head>
+<body>
+<h1>챕터6</h1>
+
+<h2>이벤트</h2>
+<ul>
+    <li>웹 브라우저나 사용자가 실행하는 어떤 동작</li>
+    <li>키보드 키를 누르는 것도 이벤트, 웹 페이지 불러오는 것도 이벤트</li>
+    <li>자바스크립트 이벤트는 주로 마우스나 키보드를 사용할 때, 웹 문서 불러올 때, 폼에 입력 시 발생</li>
+</ul>
+<table>
+    <thead>
+    <tr>
+        <th>이벤트</th>
+        <th>이벤트가 발생하는 순간</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>abort</td>
+        <td>웹 문서가 완전히 로딩되기 전에 불러오기를 멈추었을 때</td>
+    </tr>
+    <tr>
+        <td>error</td>
+        <td>문서가 정확히 로딩되지 않았을 때</td>
+    </tr>
+    <tr>
+        <td>load</td>
+        <td>문서 로딩이 끝났을 때</td>
+    </tr>
+    <tr>
+        <td>resize</td>
+        <td>문서 화면의 크기가 바뀌었을 때</td>
+    </tr>
+    <tr>
+        <td>scroll</td>
+        <td>문서 화면이 스크롤되었을 때</td>
+    </tr>
+    <tr>
+        <td>unload</td>
+        <td>문서를 벗어날 때</td>
+    </tr>
+    </tbody>
+</table>
+<pre><code class="language-jsx">window.onload = alert("안녕하세요?");</code></pre>
+<p>문서를 불러오자마자 알림 창을 표시하는 이벤트</p>
+
+<h2>마우스 이벤트</h2>
+<p>마우스에서 버튼이나 휠 버튼 조작 시 발생</p>
+<table>
+    <thead>
+    <tr>
+        <th>이벤트</th>
+        <th>이벤트가 발생하는 순간</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr><td>click</td><td>사용자가 HTML 요소를 클릭했을 때</td></tr>
+    <tr><td>dblclick</td><td>사용자가 HTML 요소를 더블클릭했을 때</td></tr>
+    <tr><td>mousedown</td><td>사용자가 요소에서 마우스 버튼을 눌렀을 때</td></tr>
+    <tr><td>mousemove</td><td>사용자가 요소에서 마우스 포인터를 움직일 때</td></tr>
+    <tr><td>mouseover</td><td>마우스 포인터를 요소 위로 옮길 때</td></tr>
+    <tr><td>mouseout</td><td>마우스 포인터가 요소를 벗어날 때</td></tr>
+    <tr><td>mouseup</td><td>요소 위에 올려놓은 마우스 버튼에서 손을 뗄 때</td></tr>
+    </tbody>
+</table>
+<pre><code class="language-jsx">const button = document.querySelector("button");
+
+button.onclick = function() {
+    document.body.style.backgroundColor = "green";
+};</code></pre>
+<p>버튼 클릭 시 배경색을 바꾸는 예시</p>
+
+<h2>키보드 이벤트</h2>
+<p>키보드에서 특정 키를 조작할 때 발생하는 이벤트</p>
+<table>
+    <thead>
+    <tr>
+        <th>이벤트</th>
+        <th>이벤트가 발생하는 순간</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr><td>keydown</td><td>키를 누르는 동안</td></tr>
+    <tr><td>keypress</td><td>키를 눌렀을 때</td></tr>
+    <tr><td>keyup</td><td>키에서 손을 뗄 때</td></tr>
+    </tbody>
+</table>
+<pre><code class="language-jsx">const body = document.body;
+const result = document.querySelector("#result");
+
+body.addEventListener("keydown", (e) => {
+    result.innerText = `
+code : ${e.code},
+key  : ${e.key}
+`;
+});</code></pre>
+<p>키를 눌렀을 때 어떤 키인지 알아내는 예제</p>
+
+<h2>폼 이벤트</h2>
+<table>
+    <thead>
+    <tr>
+        <th>이벤트</th>
+        <th>이벤트가 발생하는 순간</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr><td>blur</td><td>폼 요소에 포커스를 잃었을 때</td></tr>
+    <tr><td>change</td><td>목록이나 체크 상태 등이 변경되었을 때 (<code>&lt;input&gt;</code>, <code>&lt;select&gt;</code>, <code>&lt;textarea&gt;</code> 태그에서 사용)</td></tr>
+    <tr><td>focus</td><td>폼 요소에 포커스를 놓았을 때 (<code>&lt;label&gt;</code>, <code>&lt;select&gt;</code>, <code>&lt;textarea&gt;</code>, <code>&lt;button&gt;</code> 태그에서 사용)</td></tr>
+    <tr><td>reset</td><td>폼이 리셋되었을 때</td></tr>
+    <tr><td>submit</td><td>[submit] 버튼을 클릭했을 때</td></tr>
+    </tbody>
+</table>
+<pre><code class="language-jsx">const selectMenu = document.querySelector("#major");
+
+function displaySelect() {
+    let selectedText = selectMenu.options[selectMenu.selectedIndex].innerText;
+    alert(`[${selectedText}]를 선택했습니다.`);
+}
+
+selectMenu.onchange = displaySelect;</code></pre>
+<p>선택 목록에서 옵션 선택하면 change 이벤트가 발생하고 <code>displaySelect()</code> 함수를 연결한 예시</p>
+
+<h2>HTML 태그에 함수 연결</h2>
+<p>이벤트를 처리하는 가장 간단한 방법. 속성 이름은 ‘on이벤트명’</p>
+<pre><code class="language-jsx">&lt;button onclick="alert('클릭!')"&gt;click&lt;/button&gt;</code></pre>
+<p>버튼 클릭 시 알림 창 표시 예제</p>
+
+<h2>웹 요소에 함수 연결</h2>
+<p>스크립트 소스를 변경해도 HTML 마크업에는 영향을 주지 않게 하려면, 이벤트 처리도 스크립트 소스에서 처리하는 것이 좋습니다.</p>
+<p>DOM을 사용해 웹 요소를 가져온 후 프로퍼티로 함수를 연결</p>
+<pre><code class="language-jsx">요소.on이벤트명 = 함수;
+const button = document.querySelector("button");
+
+button.onclick = function() {
+    document.body.style.backgroundColor = "green";
+};</code></pre>
+<p>버튼 요소를 가져온 후 배경색 바꾸는 예시</p>
+<ul>
+    <li>만약 함수를 미리 만들어 두었다면 함수 이름만 지정해도 됩니다. (<code>button.onclick = myFunction;</code>)</li>
+    <li>소괄호는 제외합니다.</li>
+    <li>위 예시들은 이벤트 처리가 간편하지만 두 가지 이상의 함수를 실행할 경우 문제가 발생합니다.</li>
+</ul>
+<pre><code class="language-jsx">&lt;button onclick="alert('클릭!')"&gt;Click&lt;/button&gt;
+&lt;script src="js/event-4.js"&gt;&lt;/script&gt;
+
+const button = document.querySelector("button");
+
+button.onclick = function() {
+    document.body.style.backgroundColor = "green";
+};</code></pre>
+<p>버튼을 클릭 시 ‘클릭!’ 알림창이 나타나면서 동시에 배경색도 바뀌는 예시 (단, 실제로는 가장 마지막에 선언된 이벤트만 적용됩니다.)</p>
+
+<hr>
+<p>여러 개의 이벤트를 사용 시 <code>addEventListener()</code>를 사용하세요.</p>
+</body>
+</html>
