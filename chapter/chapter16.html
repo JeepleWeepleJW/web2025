@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>챕터16</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+    h2 { color: #2c3e50; margin-top: 30px; }
+    ul { margin-left: 20px; }
+    code, pre { background-color: #f9f9f9; padding: 10px; border-radius: 4px; display: block; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+
+<h2>반복 애니메이션</h2>
+<ul>
+  <li><code>requestAnimationFrame</code> 함수로 애니메이션 쉽게 만들기 가능</li>
+</ul>
+
+<pre><code>function move() {
+  drawCircle();
+  circle.x += circle.dx;
+  requestAnimationFrame(move);
+}</code></pre>
+
+</body>
+</html>
