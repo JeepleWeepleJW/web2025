@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Info</title>
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <script defer src="../js/bootstrap.min.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const modalEl = document.getElementById('invalidModal');
+            const modalTitleEl = modalEl.querySelector('.modal-title');
+            const modalBodyEl = modalEl.querySelector('.modal-body');
+            const closeBtn = document.getElementById('closeBtn');
+            const confirmBtn = document.getElementById('confirmBtn');
+            const contentEl = document.getElementById('content');
+
+            function redirectToWeather() {
+                window.location.href = 'weather.html';
+            }
+
+            function showInvalidModal() {
+                modalTitleEl.textContent = '잘못된 접근';
+                modalBodyEl.textContent = '잘못된 접근입니다.';
+                const bsModal = new bootstrap.Modal(modalEl);
+                bsModal.show();
+                closeBtn.addEventListener('click', redirectToWeather);
+                confirmBtn.addEventListener('click', redirectToWeather);
+            }
+
+            if (!code) {
+                showInvalidModal();
+                return;
+            }
+
+            // 첫 페이지 로드시 weather_address.json을 불러옴
+            fetch('../data/weather_address.json')
+                .then(response => response.json())
+                .then(data => {
+                    // administrative_code와 일치하는 객체를 select_address 변수에 저장
+                    const select_address = data.find(item => String(item.administrative_code) === code);
+
+                    if (select_address) {
+                        // 일치하는 객체가 있으면 화면에 표시
+                        const addressEl = document.createElement('h3');
+                        addressEl.textContent = select_address.address;
+                        const codeEl = document.createElement('p');
+                        codeEl.textContent = '행정 코드: ' + select_address.administrative_code;
+                        contentEl.appendChild(addressEl);
+                        contentEl.appendChild(codeEl);
+                    } else {
+                        // 일치하는 객체가 없으면 모달 띄우고 weather.html로 이동
+                        showInvalidModal();
+                    }
+                })
+                .catch(() => {
+                    showInvalidModal();
+                });
+        });
+    </script>
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            font-family: Arial, sans-serif;
+            padding-top: 100px;
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="content"></div>
+
+<div class="modal fade" id="invalidModal" tabindex="-1" aria-labelledby="invalidModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="invalidModalLabel"></h5>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="closeBtn">닫기</button>
+                <button type="button" class="btn btn-secondary" id="confirmBtn">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -66,16 +66,16 @@
                 const entered = inputEl.value.trim();
                 const matched = addresses.find(item => item.address === entered);
 
-                modalTitleEl.textContent = '주소 검색';
-
                 if (matched) {
-                    modalBodyEl.textContent = '행정 코드: ' + matched.administrative_code;
+                    // administrative_code를 쿼리 파라미터와 함께 weather_info.html로 이동
+                    window.location.href = `weather_info.html?code=${matched.administrative_code}`;
                 } else {
+                    // 오류 모달 표시
+                    modalTitleEl.textContent = '검색 오류';
                     modalBodyEl.textContent = '주소를 정확하게 입력해주세요.';
+                    const bsModal = new bootstrap.Modal(modalEl);
+                    bsModal.show();
                 }
-
-                const bsModal = new bootstrap.Modal(modalEl);
-                bsModal.show();
             });
         });
     </script>
@@ -120,6 +120,7 @@
     </div>
 </form>
 
+<!-- Bootstrap Modal: 주소 입력 오류 시에만 사용 -->
 <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -128,6 +129,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
             </div>
             <div class="modal-body">
+                <!-- JavaScript로 오류 메시지를 출력 -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
