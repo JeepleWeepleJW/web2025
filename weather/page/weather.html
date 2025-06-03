@@ -6,31 +6,134 @@
     <title>Weather Homepage</title>
     <link href="../css/bootstrap.min.css" rel="stylesheet">
     <script defer src="../js/bootstrap.min.js"></script>
+    <script defer>
+        let addresses = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // JSON 파일 로드
+            fetch('../data/weather_keyword.json')
+                .then(response => response.json())
+                .then(jsonData => {
+                    addresses = jsonData;
+                })
+                .catch(err => {
+                    console.error('JSON 로드 실패:', err);
+                });
+
+            const inputEl = document.getElementById('addressInput');
+            const suggestionsEl = document.getElementById('suggestions');
+            const formEl = document.getElementById('searchForm');
+            const modalEl = document.getElementById('resultModal');
+            const modalTitleEl = modalEl.querySelector('.modal-title');
+            const modalBodyEl = modalEl.querySelector('.modal-body');
+
+            // 입력 이벤트 처리: 드롭다운 리스트 표시
+            inputEl.addEventListener('input', () => {
+                const query = inputEl.value.trim();
+                suggestionsEl.innerHTML = '';
+
+                if (query.length === 0) {
+                    return;
+                }
+
+                const matches = addresses.filter(item =>
+                    item.address.includes(query)
+                );
+
+                matches.forEach(item => {
+                    const li = document.createElement('button');
+                    li.type = 'button';
+                    li.className = 'list-group-item list-group-item-action';
+                    li.textContent = item.address;
+                    li.addEventListener('click', () => {
+                        inputEl.value = item.address;
+                        suggestionsEl.innerHTML = '';
+                    });
+                    suggestionsEl.appendChild(li);
+                });
+            });
+
+            // 외부 클릭 시 드롭다운 닫기
+            document.addEventListener('click', (e) => {
+                if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
+                    suggestionsEl.innerHTML = '';
+                }
+            });
+
+            // 폼 제출 처리: 정확히 일치하는 address 검색
+            formEl.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const entered = inputEl.value.trim();
+                const matched = addresses.find(item => item.address === entered);
+
+                modalTitleEl.textContent = '주소 검색';
+
+                if (matched) {
+                    modalBodyEl.textContent = '행정 코드: ' + matched.administrative_code;
+                } else {
+                    modalBodyEl.textContent = '주소를 정확하게 입력해주세요.';
+                }
+
+                const bsModal = new bootstrap.Modal(modalEl);
+                bsModal.show();
+            });
+        });
+    </script>
+    <style>
+        /* 드롭다운 위치 및 스크롤 설정 */
+        .suggestions-container {
+            position: relative;
+        }
+        #suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 <body class="bg-white d-flex justify-content-center align-items-center vh-100">
-<form class="w-100" style="max-width: 600px;" action="#" method="GET">
+<form id="searchForm" class="w-100" style="max-width: 600px;" action="#" method="GET">
     <div class="row justify-content-center mb-3">
-        <div class="col-10">
-            <label for="addressInput"></label><input
-                type="text"
-                id="addressInput"
-                name="address"
-                class="form-control form-control-lg border-dark bg-white text-dark"
-                placeholder="주소를 입력하세요"
-                required
-        >
+        <div class="col-10 suggestions-container">
+            <input
+                    type="text"
+                    id="addressInput"
+                    name="address"
+                    class="form-control form-control-lg border-dark bg-white text-dark"
+                    placeholder="주소를 입력하세요"
+                    autocomplete="off"
+                    required
+            >
+            <div id="suggestions" class="list-group"></div>
         </div>
     </div>
     <div class="row justify-content-center">
         <div class="col-10">
-            <button
-                    type="submit"
-                    class="btn btn-dark btn-lg w-100"
-            >
+            <button type="submit" class="btn btn-dark btn-lg w-100">
                 검색
             </button>
         </div>
     </div>
 </form>
+
+<div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resultModalLabel">알림</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
