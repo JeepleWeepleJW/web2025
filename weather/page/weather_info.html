@@ -17,6 +17,8 @@
             const confirmBtn = document.getElementById('confirmBtn');
             const contentEl = document.getElementById('content');
 
+            let select_address = null; // administrative_code와 일치하는 객체를 저장할 변수
+
             function redirectToWeather() {
                 window.location.href = 'weather.html';
             }
@@ -35,25 +37,109 @@
                 return;
             }
 
-            // 첫 페이지 로드시 weather_address.json을 불러옴
+            // 1) 첫 페이지 로드시 weather_address.json을 불러와서 select_address에 할당
             fetch('../data/weather_address.json')
                 .then(response => response.json())
                 .then(data => {
-                    // administrative_code와 일치하는 객체를 select_address 변수에 저장
-                    const select_address = data.find(item => String(item.administrative_code) === code);
+                    select_address = data.find(item => String(item.administrative_code) === code);
 
-                    if (select_address) {
-                        // 일치하는 객체가 있으면 화면에 표시
-                        const addressEl = document.createElement('h3');
-                        addressEl.textContent = select_address.address;
-                        const codeEl = document.createElement('p');
-                        codeEl.textContent = '행정 코드: ' + select_address.administrative_code;
-                        contentEl.appendChild(addressEl);
-                        contentEl.appendChild(codeEl);
-                    } else {
+                    if (!select_address) {
                         // 일치하는 객체가 없으면 모달 띄우고 weather.html로 이동
                         showInvalidModal();
+                        return;
                     }
+
+                    // 일치하는 주소가 존재할 때 화면에 주소와 행정 코드를 출력 (사례용)
+                    const addressEl = document.createElement('h3');
+                    addressEl.textContent = select_address.address;
+                    const codeEl = document.createElement('p');
+                    codeEl.textContent = '행정 코드: ' + select_address.administrative_code;
+                    contentEl.appendChild(addressEl);
+                    contentEl.appendChild(codeEl);
+
+                    // 2) 단기예보조회 API 호출 준비
+                    // 현재 날짜(base_date)와 현재 시간(base_time) 생성
+                    const now = new Date();
+                    const yyyy = now.getFullYear().toString();
+                    const mm = (now.getMonth() + 1).toString().padStart(2, '0'); // 월
+                    const dd = now.getDate().toString().padStart(2, '0');       // 일
+                    const hh = now.getHours().toString().padStart(2, '0');      // 시
+                    const ii = now.getMinutes().toString().padStart(2, '0');    // 분
+
+                    const base_date = `${yyyy}${mm}${dd}`;    // ex. "20250605"
+                    const base_time = `${hh}${ii}`;           // ex. "1432"
+
+                    // 예보지점 X,Y 좌표: select_address.lon_decimal, select_address.lat_decimal
+                    // (필요시 소수점을 버리거나 적절히 반올림하세요)
+                    const nx = Math.round(select_address.lon_decimal);
+                    const ny = Math.round(select_address.lat_decimal);
+
+                    // 공공데이터포털에서 발급받은 단기예보 API 서비스키 (URL-Encode된 상태로 넣어주세요)
+                    const serviceKey = 'XBi6TBHmrnZ0J1zY7Xu4PpdsrKrOXjxRm8l7LSDxsdPpF0RMvZUVVhQF1nYQRQ87en0GXMRwD4y/XcPkr+BXAw==';
+
+                    // 나머지 파라미터 설정
+                    const numOfRows = 50;      // 한 페이지 결과 수 (필요에 따라 변경)
+                    const pageNo = 1;          // 페이지 번호
+                    const dataType = 'JSON';   // JSON 응답을 받도록 설정
+
+                    // API 호출 URL 조립
+                    const apiUrl = new URL('http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst');
+                    apiUrl.searchParams.append('serviceKey', serviceKey);
+                    apiUrl.searchParams.append('numOfRows', numOfRows);
+                    apiUrl.searchParams.append('pageNo', pageNo);
+                    apiUrl.searchParams.append('dataType', dataType);
+                    apiUrl.searchParams.append('base_date', base_date);
+                    apiUrl.searchParams.append('base_time', base_time);
+                    apiUrl.searchParams.append('nx', nx);
+                    apiUrl.searchParams.append('ny', ny);
+
+                    // 3) fetch를 이용해 API 호출 (JSON 형태 응답)
+                    fetch(apiUrl.toString())
+                        .then(res => {
+                            if (!res.ok) {
+                                throw new Error('API 호출 실패: ' + res.status);
+                            }
+                            return res.json();
+                        })
+                        .then(json => {
+                            // 여기에서 json에 담긴 예보 데이터를 처리합니다.
+                            // 예를 들어 결과를 화면에 렌더링하거나, 원하는 값만 추출해서 표시할 수 있습니다.
+
+                            // 응답 구조 예시(생략):
+                            // json.response.body.items.item → 예보 항목들이 배열로 담겨 있음
+                            const items = json.response?.body?.items?.item || [];
+                            if (items.length === 0) {
+                                const noDataEl = document.createElement('p');
+                                noDataEl.textContent = '단기예보 정보가 없습니다.';
+                                contentEl.appendChild(noDataEl);
+                                return;
+                            }
+
+                            // 예시: 첫 번째 항목만 화면에 출력
+                            const firstFcst = items[0];
+                            const fcstDate = firstFcst.fcstDate;   // 예보일자(YYYYMMDD)
+                            const fcstTime = firstFcst.fcstTime;   // 예보시각(HHMM)
+                            const category = firstFcst.category;   // 자료구분문자코드 (TMP, SKY 등)
+                            const fcstValue = firstFcst.fcstValue; // 예보 값
+
+                            const resultEl = document.createElement('div');
+                            resultEl.innerHTML = `
+                                <h4>단기예보 결과 (예시)</h4>
+                                <p><strong>예보 일자:</strong> ${fcstDate}</p>
+                                <p><strong>예보 시각:</strong> ${fcstTime}</p>
+                                <p><strong>자료 구분:</strong> ${category}</p>
+                                <p><strong>예보 값:</strong> ${fcstValue}</p>
+                            `;
+                            contentEl.appendChild(resultEl);
+
+                            // 원하는 대로 items 배열을 순회하면서 테이블이나 차트로 가공하여 표시할 수 있습니다.
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            const errEl = document.createElement('p');
+                            errEl.textContent = '단기예보조회 API 호출 중 오류가 발생했습니다.';
+                            contentEl.appendChild(errEl);
+                        });
                 })
                 .catch(() => {
                     showInvalidModal();
