@@ -58,16 +58,48 @@
                     contentEl.appendChild(codeEl);
 
                     // 2) 단기예보조회 API 호출 준비
-                    // 현재 날짜(base_date)와 현재 시간(base_time) 생성
-                    const now = new Date();
-                    const yyyy = now.getFullYear().toString();
-                    const mm = (now.getMonth() + 1).toString().padStart(2, '0'); // 월
-                    const dd = now.getDate().toString().padStart(2, '0');       // 일
-                    const hh = now.getHours().toString().padStart(2, '0');      // 시
-                    const ii = now.getMinutes().toString().padStart(2, '0');    // 분
+                    function computeBaseDateTime() {
+                        const now = new Date();
+                        const hours = now.getHours();
+                        const minutes = now.getMinutes();
 
-                    const base_date = `${yyyy}${mm}${dd}`;    // ex. "20250605"
-                    const base_time = `${hh}${ii}`;           // ex. "1432"
+                        // 유효한 발표 시각 목록 (HHMM)
+                        const candidates = [
+                            { hh: 23, mm: 0, str: '2300' },
+                            { hh: 20, mm: 0, str: '2000' },
+                            { hh: 17, mm: 0, str: '1700' },
+                            { hh: 14, mm: 0, str: '1400' },
+                            { hh: 11, mm: 0, str: '1100' },
+                            { hh: 8,  mm: 0, str: '0800' },
+                            { hh: 5,  mm: 0, str: '0500' },
+                            { hh: 2,  mm: 0, str: '0200' }
+                        ];
+
+                        // 현재 시간이 발표 시각+10분 이후인지 확인
+                        for (let candidate of candidates) {
+                            if (hours > candidate.hh || (hours === candidate.hh && minutes >= 10)) {
+                                // 같은 날짜
+                                const yyyy = now.getFullYear().toString();
+                                const mmStr = (now.getMonth() + 1).toString().padStart(2, '0');
+                                const ddStr = now.getDate().toString().padStart(2, '0');
+                                return {
+                                    base_date: `${yyyy}${mmStr}${ddStr}`,
+                                    base_time: candidate.str
+                                };
+                            }
+                        }
+                        // 아무 후보도 충족하지 못하면 어제 23:00 사용
+                        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                        const yyy = yesterday.getFullYear().toString();
+                        const mmY = (yesterday.getMonth() + 1).toString().padStart(2, '0');
+                        const ddY = yesterday.getDate().toString().padStart(2, '0');
+                        return {
+                            base_date: `${yyy}${mmY}${ddY}`,
+                            base_time: '2300'
+                        };
+                    }
+
+                    const { base_date, base_time } = computeBaseDateTime();
 
                     // 예보지점 X,Y 좌표: select_address.lon_decimal, select_address.lat_decimal
                     // (필요시 소수점을 버리거나 적절히 반올림하세요)
@@ -78,9 +110,20 @@
                     const serviceKey = 'XBi6TBHmrnZ0J1zY7Xu4PpdsrKrOXjxRm8l7LSDxsdPpF0RMvZUVVhQF1nYQRQ87en0GXMRwD4y/XcPkr+BXAw==';
 
                     // 나머지 파라미터 설정
-                    const numOfRows = 50;      // 한 페이지 결과 수 (필요에 따라 변경)
+                    const numOfRows = 2000;      // 한 페이지 결과 수 (필요에 따라 변경)
                     const pageNo = 1;          // 페이지 번호
                     const dataType = 'JSON';   // JSON 응답을 받도록 설정
+
+                    // **파라미터 로그 출력**
+                    console.log('단기예보 API 호출 파라미터:');
+                    console.log('serviceKey:', serviceKey);
+                    console.log('numOfRows:', numOfRows);
+                    console.log('pageNo:', pageNo);
+                    console.log('dataType:', dataType);
+                    console.log('base_date:', base_date);
+                    console.log('base_time:', base_time);
+                    console.log('nx:', nx);
+                    console.log('ny:', ny);
 
                     // API 호출 URL 조립
                     const apiUrl = new URL('http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst');
@@ -93,6 +136,9 @@
                     apiUrl.searchParams.append('nx', nx);
                     apiUrl.searchParams.append('ny', ny);
 
+                    // 전체 URL 로그 출력
+                    console.log('단기예보 API 요청 URL:', apiUrl.toString());
+
                     // 3) fetch를 이용해 API 호출 (JSON 형태 응답)
                     fetch(apiUrl.toString())
                         .then(res => {
@@ -103,10 +149,6 @@
                         })
                         .then(json => {
                             // 여기에서 json에 담긴 예보 데이터를 처리합니다.
-                            // 예를 들어 결과를 화면에 렌더링하거나, 원하는 값만 추출해서 표시할 수 있습니다.
-
-                            // 응답 구조 예시(생략):
-                            // json.response.body.items.item → 예보 항목들이 배열로 담겨 있음
                             const items = json.response?.body?.items?.item || [];
                             if (items.length === 0) {
                                 const noDataEl = document.createElement('p');
@@ -131,8 +173,6 @@
                                 <p><strong>예보 값:</strong> ${fcstValue}</p>
                             `;
                             contentEl.appendChild(resultEl);
-
-                            // 원하는 대로 items 배열을 순회하면서 테이블이나 차트로 가공하여 표시할 수 있습니다.
                         })
                         .catch(err => {
                             console.error(err);
