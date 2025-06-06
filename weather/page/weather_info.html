@@ -70,9 +70,9 @@
                             { hh: 17, mm: 0, str: '1700' },
                             { hh: 14, mm: 0, str: '1400' },
                             { hh: 11, mm: 0, str: '1100' },
-                            { hh: 8,  mm: 0, str: '0800' },
-                            { hh: 5,  mm: 0, str: '0500' },
-                            { hh: 2,  mm: 0, str: '0200' }
+                            { hh:  8, mm: 0, str: '0800' },
+                            { hh:  5, mm: 0, str: '0500' },
+                            { hh:  2, mm: 0, str: '0200' }
                         ];
 
                         // 현재 시간이 발표 시각+10분 이후인지 확인
@@ -102,7 +102,7 @@
                     const { base_date, base_time } = computeBaseDateTime();
 
                     // 예보지점 X,Y 좌표: select_address.lon_decimal, select_address.lat_decimal
-                    // (필요시 소수점을 버리거나 적절히 반올림하세요)
+                    // (필요시 소수점을 반올림)
                     const nx = Math.round(select_address.lon_decimal);
                     const ny = Math.round(select_address.lat_decimal);
 
@@ -110,20 +110,9 @@
                     const serviceKey = 'XBi6TBHmrnZ0J1zY7Xu4PpdsrKrOXjxRm8l7LSDxsdPpF0RMvZUVVhQF1nYQRQ87en0GXMRwD4y/XcPkr+BXAw==';
 
                     // 나머지 파라미터 설정
-                    const numOfRows = 2000;      // 한 페이지 결과 수 (필요에 따라 변경)
-                    const pageNo = 1;          // 페이지 번호
-                    const dataType = 'JSON';   // JSON 응답을 받도록 설정
-
-                    // **파라미터 로그 출력**
-                    console.log('단기예보 API 호출 파라미터:');
-                    console.log('serviceKey:', serviceKey);
-                    console.log('numOfRows:', numOfRows);
-                    console.log('pageNo:', pageNo);
-                    console.log('dataType:', dataType);
-                    console.log('base_date:', base_date);
-                    console.log('base_time:', base_time);
-                    console.log('nx:', nx);
-                    console.log('ny:', ny);
+                    const numOfRows = 2000;    // 충분히 많은 수를 설정
+                    const pageNo = 1;
+                    const dataType = 'JSON';
 
                     // API 호출 URL 조립
                     const apiUrl = new URL('http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst');
@@ -136,9 +125,6 @@
                     apiUrl.searchParams.append('nx', nx);
                     apiUrl.searchParams.append('ny', ny);
 
-                    // 전체 URL 로그 출력
-                    console.log('단기예보 API 요청 URL:', apiUrl.toString());
-
                     // 3) fetch를 이용해 API 호출 (JSON 형태 응답)
                     fetch(apiUrl.toString())
                         .then(res => {
@@ -148,7 +134,6 @@
                             return res.json();
                         })
                         .then(json => {
-                            // 여기에서 json에 담긴 예보 데이터를 처리합니다.
                             const items = json.response?.body?.items?.item || [];
                             if (items.length === 0) {
                                 const noDataEl = document.createElement('p');
@@ -157,22 +142,73 @@
                                 return;
                             }
 
-                            // 예시: 첫 번째 항목만 화면에 출력
-                            const firstFcst = items[0];
-                            const fcstDate = firstFcst.fcstDate;   // 예보일자(YYYYMMDD)
-                            const fcstTime = firstFcst.fcstTime;   // 예보시각(HHMM)
-                            const category = firstFcst.category;   // 자료구분문자코드 (TMP, SKY 등)
-                            const fcstValue = firstFcst.fcstValue; // 예보 값
+                            // 4) fcstDate별로 정렬된 후, 각 날짜별로 category별 최신(fcstTime 최대) 데이터만 남기기
+                            //    - 먼저 fcstDate 순으로 그룹핑
+                            const byDate = {};
+                            items.forEach(entry => {
+                                const date = entry.fcstDate; // "YYYYMMDD"
+                                if (!byDate[date]) {
+                                    byDate[date] = [];
+                                }
+                                byDate[date].push(entry);
+                            });
 
-                            const resultEl = document.createElement('div');
-                            resultEl.innerHTML = `
-                                <h4>단기예보 결과 (예시)</h4>
-                                <p><strong>예보 일자:</strong> ${fcstDate}</p>
-                                <p><strong>예보 시각:</strong> ${fcstTime}</p>
-                                <p><strong>자료 구분:</strong> ${category}</p>
-                                <p><strong>예보 값:</strong> ${fcstValue}</p>
-                            `;
-                            contentEl.appendChild(resultEl);
+                            // 5) 날짜별로 category별 최신 시간 항목만 추출
+                            const latestByDate = {};
+                            Object.keys(byDate).sort().forEach(date => {
+                                const arr = byDate[date];
+                                // 이 날짜의 항목들(category별 가장 최신 time으로 유지)
+                                const latestThisDate = {};
+                                arr.forEach(entry => {
+                                    const cat = entry.category;
+                                    const time = entry.fcstTime; // "HHMM"
+                                    if (!latestThisDate[cat] || time > latestThisDate[cat].fcstTime) {
+                                        latestThisDate[cat] = entry;
+                                    }
+                                });
+                                // 정제된 결과를 객체에 저장
+                                latestByDate[date] = latestThisDate;
+                            });
+
+                            // 6) 화면 표시: 날짜별로 최신 데이터들을 리스트 형태로 보여주기
+                            const container = contentEl;
+                            const heading = document.createElement('h4');
+                            heading.textContent = '날짜별 최신 단기예보';
+                            container.appendChild(heading);
+
+                            // 날짜 순서대로 순회
+                            Object.keys(latestByDate).sort().forEach(date => {
+                                // 날짜별 컨테이너
+                                const dateGroupEl = document.createElement('div');
+                                dateGroupEl.className = 'mb-4';
+
+                                // 날짜 제목
+                                const dateTitle = document.createElement('h5');
+                                dateTitle.textContent = `예보일자: ${date}`;
+                                dateGroupEl.appendChild(dateTitle);
+
+                                // 해당 날짜의 리스트 그룹 생성
+                                const listGroup = document.createElement('ul');
+                                listGroup.className = 'list-group';
+
+                                // 각 category별 항목 순회
+                                const entriesObj = latestByDate[date];
+                                Object.values(entriesObj).forEach(entry => {
+                                    const itemEl = document.createElement('li');
+                                    itemEl.className = 'list-group-item';
+
+                                    // "시각, 카테고리, 값" 형태로 표시
+                                    itemEl.textContent =
+                                        `예보시각: ${entry.fcstTime} | ` +
+                                        `카테고리: ${entry.category} | ` +
+                                        `예보값: ${entry.fcstValue}`;
+
+                                    listGroup.appendChild(itemEl);
+                                });
+
+                                dateGroupEl.appendChild(listGroup);
+                                container.appendChild(dateGroupEl);
+                            });
                         })
                         .catch(err => {
                             console.error(err);
@@ -191,7 +227,7 @@
             background-color: #ffffff;
             color: #000000;
             font-family: Arial, sans-serif;
-            padding-top: 100px;
+            padding-top: 20px;
         }
     </style>
 </head>
