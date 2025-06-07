@@ -176,6 +176,8 @@
                             heading.textContent = '날짜별 최신 단기예보';
                             container.appendChild(heading);
 
+                            const skyMap = { '1': '맑음', '3': '구름많음', '4': '흐림' };
+
                             // 날짜 순서대로 순회
                             Object.keys(latestByDate).sort().forEach(date => {
                                 // 날짜별 컨테이너
@@ -197,11 +199,16 @@
                                     const itemEl = document.createElement('li');
                                     itemEl.className = 'list-group-item';
 
+                                    let factV = entry.fcstValue
+                                    if (entry.category === "SKY") {
+                                        factV = skyMap[factV]
+                                    }
+
                                     // "시각, 카테고리, 값" 형태로 표시
                                     itemEl.textContent =
                                         `예보시각: ${entry.fcstTime} | ` +
                                         `카테고리: ${entry.category} | ` +
-                                        `예보값: ${entry.fcstValue}`;
+                                        `예보값: ${factV}`;
 
                                     listGroup.appendChild(itemEl);
                                 });
