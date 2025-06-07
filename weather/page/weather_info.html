@@ -138,10 +138,8 @@
                     const table1 = document.createElement('table');
                     table1.className='table table-borderless w-auto mx-auto mt-3';
                     table1.innerHTML=`
-          <tr><th>하늘상태</th><td>${skyMap[td.SKY.fcstValue]||''}</td></tr>
-          <tr><th>강수형태</th><td>${td.PTY.fcstValue}</td></tr>
-          <tr><th>강수확률</th><td>${td.POP.fcstValue}%</td></tr>
           <tr><th>기온</th><td>${td.TMP.fcstValue}°C</td></tr>
+          <tr><th>강수확률</th><td>${td.POP.fcstValue}%</td></tr>
         `;
                     block1.appendChild(table1);
                     contentEl.appendChild(block1);
@@ -162,12 +160,9 @@
                 <div class="card-body">
                   <h5 class="card-title">${formatDateYM(date)}</h5>
                   <img src="${getWeatherIcon(d)}" alt="icon" style="width:48px">
-                  <p class="mb-1">하늘: ${skyMap[d.SKY.fcstValue]||''}</p>
-                  <p class="mb-1">강수: ${d.PTY.fcstValue}</p>
                   <p class="mb-1">강수확률: ${d.POP.fcstValue}%</p>
-                  <p class="mb-1">최저: ${d.TMN?.fcstValue||'-'}°C</p>
-                  <p class="mb-1">최고: ${d.TMX?.fcstValue||'-'}°C</p>
-                  <p>기온: ${d.TMP?.fcstValue||'-'}°C</p>
+                  <p class="mb-1">최저: ${d.TMN?.fcstValue|| d.TMP?.fcstValue || '-'}°C</p>
+                  <p class="mb-1">최고: ${d.TMX?.fcstValue|| d.TMP?.fcstValue || '-'}°C</p>
                 </div>
               </div>
             `;
