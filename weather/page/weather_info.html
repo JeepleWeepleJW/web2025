@@ -1,232 +1,162 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Weather Info</title>
     <link href="../css/bootstrap.min.css" rel="stylesheet">
     <script defer src="../js/bootstrap.min.js"></script>
     <script defer>
         document.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
-            const modalEl = document.getElementById('invalidModal');
-            const modalTitleEl = modalEl.querySelector('.modal-title');
-            const modalBodyEl = modalEl.querySelector('.modal-body');
-            const closeBtn = document.getElementById('closeBtn');
+            const params     = new URLSearchParams(window.location.search);
+            const code       = params.get('code');
+            const modalEl    = document.getElementById('invalidModal');
+            const modalTitle = modalEl.querySelector('.modal-title');
+            const modalBody  = modalEl.querySelector('.modal-body');
+            const closeBtn   = document.getElementById('closeBtn');
             const confirmBtn = document.getElementById('confirmBtn');
-            const contentEl = document.getElementById('content');
-
-            let select_address = null; // administrative_code와 일치하는 객체를 저장할 변수
+            const contentEl  = document.getElementById('content');
+            const spinnerEl  = document.getElementById('loadingSpinner');
 
             function redirectToWeather() {
                 window.location.href = 'weather.html';
             }
-
             function showInvalidModal() {
-                modalTitleEl.textContent = '잘못된 접근';
-                modalBodyEl.textContent = '잘못된 접근입니다.';
-                const bsModal = new bootstrap.Modal(modalEl);
-                bsModal.show();
+                modalTitle.textContent = '잘못된 접근';
+                modalBody.textContent  = '잘못된 접근입니다.';
+                new bootstrap.Modal(modalEl).show();
                 closeBtn.addEventListener('click', redirectToWeather);
                 confirmBtn.addEventListener('click', redirectToWeather);
             }
+            if (!code) { showInvalidModal(); return; }
 
-            if (!code) {
-                showInvalidModal();
-                return;
-            }
+            const skyMap = { '1':'맑음', '3':'구름많음', '4':'흐림' };
 
-            // 1) 첫 페이지 로드시 weather_address.json을 불러와서 select_address에 할당
+            // ■ 로딩 스피너 표시
+            spinnerEl.classList.remove('d-none');
+
+            // 1) 주소 JSON 로드
             fetch('../data/weather_address.json')
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
-                    select_address = data.find(item => String(item.administrative_code) === code);
+                    const select_address = data.find(item => String(item.administrative_code) === code);
+                    if (!select_address) { showInvalidModal(); throw 'no-address'; }
 
-                    if (!select_address) {
-                        // 일치하는 객체가 없으면 모달 띄우고 weather.html로 이동
-                        showInvalidModal();
-                        return;
-                    }
-
-                    // 일치하는 주소가 존재할 때 화면에 주소와 행정 코드를 출력 (사례용)
-                    const addressEl = document.createElement('h3');
-                    addressEl.textContent = select_address.address;
-                    const codeEl = document.createElement('p');
-                    codeEl.textContent = '행정 코드: ' + select_address.administrative_code;
-                    contentEl.appendChild(addressEl);
-                    contentEl.appendChild(codeEl);
-
-                    // 2) 단기예보조회 API 호출 준비
-                    function computeBaseDateTime() {
-                        const now = new Date();
-                        const hours = now.getHours();
-                        const minutes = now.getMinutes();
-
-                        // 유효한 발표 시각 목록 (HHMM)
-                        const candidates = [
-                            { hh: 23, mm: 0, str: '2300' },
-                            { hh: 20, mm: 0, str: '2000' },
-                            { hh: 17, mm: 0, str: '1700' },
-                            { hh: 14, mm: 0, str: '1400' },
-                            { hh: 11, mm: 0, str: '1100' },
-                            { hh:  8, mm: 0, str: '0800' },
-                            { hh:  5, mm: 0, str: '0500' },
-                            { hh:  2, mm: 0, str: '0200' }
-                        ];
-
-                        // 현재 시간이 발표 시각+10분 이후인지 확인
-                        for (let candidate of candidates) {
-                            if (hours > candidate.hh || (hours === candidate.hh && minutes >= 10)) {
-                                // 같은 날짜
-                                const yyyy = now.getFullYear().toString();
-                                const mmStr = (now.getMonth() + 1).toString().padStart(2, '0');
-                                const ddStr = now.getDate().toString().padStart(2, '0');
-                                return {
-                                    base_date: `${yyyy}${mmStr}${ddStr}`,
-                                    base_time: candidate.str
-                                };
-                            }
-                        }
-                        // 아무 후보도 충족하지 못하면 어제 23:00 사용
-                        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                        const yyy = yesterday.getFullYear().toString();
-                        const mmY = (yesterday.getMonth() + 1).toString().padStart(2, '0');
-                        const ddY = yesterday.getDate().toString().padStart(2, '0');
-                        return {
-                            base_date: `${yyy}${mmY}${ddY}`,
-                            base_time: '2300'
-                        };
-                    }
-
+                    // 발표시각 계산, 좌표 준비
                     const { base_date, base_time } = computeBaseDateTime();
-
-                    // 예보지점 X,Y 좌표: select_address.lon_decimal, select_address.lat_decimal
-                    // (필요시 소수점을 반올림)
                     const nx = Math.round(select_address.lat_decimal);
                     const ny = Math.round(select_address.lon_decimal);
-
-                    // 공공데이터포털에서 발급받은 단기예보 API 서비스키 (URL-Encode된 상태로 넣어주세요)
                     const serviceKey = 'XBi6TBHmrnZ0J1zY7Xu4PpdsrKrOXjxRm8l7LSDxsdPpF0RMvZUVVhQF1nYQRQ87en0GXMRwD4y/XcPkr+BXAw==';
-
-                    // 나머지 파라미터 설정
-                    const numOfRows = 2000;    // 충분히 많은 수를 설정
-                    const pageNo = 1;
-                    const dataType = 'JSON';
-
-                    // API 호출 URL 조립
                     const apiUrl = new URL('http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst');
                     apiUrl.searchParams.append('serviceKey', serviceKey);
-                    apiUrl.searchParams.append('numOfRows', numOfRows);
-                    apiUrl.searchParams.append('pageNo', pageNo);
-                    apiUrl.searchParams.append('dataType', dataType);
+                    apiUrl.searchParams.append('numOfRows', 2000);
+                    apiUrl.searchParams.append('pageNo', 1);
+                    apiUrl.searchParams.append('dataType', 'JSON');
                     apiUrl.searchParams.append('base_date', base_date);
                     apiUrl.searchParams.append('base_time', base_time);
                     apiUrl.searchParams.append('nx', nx);
                     apiUrl.searchParams.append('ny', ny);
 
-                    // 3) fetch를 이용해 API 호출 (JSON 형태 응답)
-                    fetch(apiUrl.toString())
-                        .then(res => {
-                            if (!res.ok) {
-                                throw new Error('API 호출 실패: ' + res.status);
-                            }
-                            return res.json();
-                        })
-                        .then(json => {
-                            const items = json.response?.body?.items?.item || [];
-                            if (items.length === 0) {
-                                const noDataEl = document.createElement('p');
-                                noDataEl.textContent = '단기예보 정보가 없습니다.';
-                                contentEl.appendChild(noDataEl);
-                                return;
-                            }
-
-                            // 4) fcstDate별로 정렬된 후, 각 날짜별로 category별 최신(fcstTime 최대) 데이터만 남기기
-                            //    - 먼저 fcstDate 순으로 그룹핑
-                            const byDate = {};
-                            items.forEach(entry => {
-                                const date = entry.fcstDate; // "YYYYMMDD"
-                                if (!byDate[date]) {
-                                    byDate[date] = [];
-                                }
-                                byDate[date].push(entry);
-                            });
-
-                            // 5) 날짜별로 category별 최신 시간 항목만 추출
-                            const latestByDate = {};
-                            Object.keys(byDate).sort().forEach(date => {
-                                const arr = byDate[date];
-                                // 이 날짜의 항목들(category별 가장 최신 time으로 유지)
-                                const latestThisDate = {};
-                                arr.forEach(entry => {
-                                    const cat = entry.category;
-                                    const time = entry.fcstTime; // "HHMM"
-                                    if (!latestThisDate[cat] || time > latestThisDate[cat].fcstTime) {
-                                        latestThisDate[cat] = entry;
-                                    }
-                                });
-                                // 정제된 결과를 객체에 저장
-                                latestByDate[date] = latestThisDate;
-                            });
-
-                            // 6) 화면 표시: 날짜별로 최신 데이터들을 리스트 형태로 보여주기
-                            const container = contentEl;
-                            const heading = document.createElement('h4');
-                            heading.textContent = '날짜별 최신 단기예보';
-                            container.appendChild(heading);
-
-                            const skyMap = { '1': '맑음', '3': '구름많음', '4': '흐림' };
-
-                            // 날짜 순서대로 순회
-                            Object.keys(latestByDate).sort().forEach(date => {
-                                // 날짜별 컨테이너
-                                const dateGroupEl = document.createElement('div');
-                                dateGroupEl.className = 'mb-4';
-
-                                // 날짜 제목
-                                const dateTitle = document.createElement('h5');
-                                dateTitle.textContent = `예보일자: ${date}`;
-                                dateGroupEl.appendChild(dateTitle);
-
-                                // 해당 날짜의 리스트 그룹 생성
-                                const listGroup = document.createElement('ul');
-                                listGroup.className = 'list-group';
-
-                                // 각 category별 항목 순회
-                                const entriesObj = latestByDate[date];
-                                Object.values(entriesObj).forEach(entry => {
-                                    const itemEl = document.createElement('li');
-                                    itemEl.className = 'list-group-item';
-
-                                    let factV = entry.fcstValue
-                                    if (entry.category === "SKY") {
-                                        factV = skyMap[factV]
-                                    }
-
-                                    // "시각, 카테고리, 값" 형태로 표시
-                                    itemEl.textContent =
-                                        `예보시각: ${entry.fcstTime} | ` +
-                                        `카테고리: ${entry.category} | ` +
-                                        `예보값: ${factV}`;
-
-                                    listGroup.appendChild(itemEl);
-                                });
-
-                                dateGroupEl.appendChild(listGroup);
-                                container.appendChild(dateGroupEl);
-                            });
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            const errEl = document.createElement('p');
-                            errEl.textContent = '단기예보조회 API 호출 중 오류가 발생했습니다.';
-                            contentEl.appendChild(errEl);
-                        });
+                    return fetch(apiUrl.toString());
                 })
-                .catch(() => {
-                    showInvalidModal();
+                .then(res => {
+                    if (!res.ok) throw 'api-error';
+                    return res.json();
+                })
+                .then(json => {
+                    const items = json.response?.body?.items?.item || [];
+                    if (!items.length) {
+                        contentEl.innerHTML = '<p>단기예보 정보가 없습니다.</p>';
+                        return;
+                    }
+
+                    // 그룹핑 & 최신 데이터 추출
+                    const byDate = {};
+                    items.forEach(e => {
+                        byDate[e.fcstDate] = byDate[e.fcstDate] || [];
+                        byDate[e.fcstDate].push(e);
+                    });
+                    const latestByDate = {};
+                    Object.keys(byDate).sort().forEach(date => {
+                        const latestThis = {};
+                        byDate[date].forEach(e => {
+                            if (!latestThis[e.category] || e.fcstTime > latestThis[e.category].fcstTime) {
+                                latestThis[e.category] = e;
+                            }
+                        });
+                        latestByDate[date] = latestThis;
+                    });
+
+                    // 화면 렌더링
+                    const heading = document.createElement('h4');
+                    heading.textContent = '날짜별 최신 단기예보';
+                    contentEl.appendChild(heading);
+
+                    Object.keys(latestByDate).forEach(date => {
+                        const groupDiv = document.createElement('div');
+                        groupDiv.className = 'mb-4';
+                        const title = document.createElement('h5');
+                        title.textContent = `예보일자: ${date}`;
+                        groupDiv.appendChild(title);
+
+                        const ul = document.createElement('ul');
+                        ul.className = 'list-group';
+
+                        Object.values(latestByDate[date]).forEach(entry => {
+                            const li = document.createElement('li');
+                            li.className = 'list-group-item';
+                            let val = entry.fcstValue;
+                            if (entry.category === 'SKY') val = skyMap[val] || val;
+                            li.textContent =
+                                `예보시각: ${entry.fcstTime} | ` +
+                                `카테고리: ${entry.category} | ` +
+                                `예보값: ${val}`;
+                            ul.appendChild(li);
+                        });
+
+                        groupDiv.appendChild(ul);
+                        contentEl.appendChild(groupDiv);
+                    });
+                })
+                .catch(err => {
+                    if (err !== 'no-address') {
+                        contentEl.innerHTML = '<p>단기예보조회 API 호출 중 오류가 발생했습니다.</p>';
+                    }
+                })
+                .finally(() => {
+                    // ■ 로딩 스피너 숨기기
+                    spinnerEl.classList.add('d-none');
                 });
+
+            // helper: 발표일시 계산
+            function computeBaseDateTime() {
+                const now = new Date(), h = now.getHours(), m = now.getMinutes();
+                const candidates = [
+                    { hh:23, mm:0, str:'2300' },
+                    { hh:20, mm:0, str:'2000' },
+                    { hh:17, mm:0, str:'1700' },
+                    { hh:14, mm:0, str:'1400' },
+                    { hh:11, mm:0, str:'1100' },
+                    { hh: 8, mm:0, str:'0800' },
+                    { hh: 5, mm:0, str:'0500' },
+                    { hh: 2, mm:0, str:'0200' }
+                ];
+                for (let c of candidates) {
+                    if (h>c.hh || (h===c.hh && m>=10)) {
+                        const y=now.getFullYear(), mmn=now.getMonth()+1, dd=now.getDate();
+                        return {
+                            base_date: `${y}${String(mmn).padStart(2,'0')}${String(dd).padStart(2,'0')}`,
+                            base_time: c.str
+                        };
+                    }
+                }
+                const yst = new Date(now - 86400000),
+                    y=yst.getFullYear(), mmn=yst.getMonth()+1, dd=yst.getDate();
+                return {
+                    base_date: `${y}${String(mmn).padStart(2,'0')}${String(dd).padStart(2,'0')}`,
+                    base_time: '2300'
+                };
+            }
         });
     </script>
     <style>
@@ -239,13 +169,25 @@
     </style>
 </head>
 <body>
+<!-- 로딩 스피너 (Bootstrap 유틸리티만 사용) -->
+<div
+        id="loadingSpinner"
+        class="d-none position-fixed top-50 start-50 translate-middle d-flex justify-content-center align-items-center"
+        style="z-index: 1050;"
+>
+    <div class="spinner-border text-dark" role="status">
+        <span class="visually-hidden">로딩중...</span>
+    </div>
+</div>
+
 <div class="container" id="content"></div>
 
-<div class="modal fade" id="invalidModal" tabindex="-1" aria-labelledby="invalidModalLabel" aria-hidden="true">
+<!-- 잘못된 접근 모달 -->
+<div class="modal fade" id="invalidModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="invalidModalLabel"></h5>
+                <h5 class="modal-title"></h5>
             </div>
             <div class="modal-body"></div>
             <div class="modal-footer">
