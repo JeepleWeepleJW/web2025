@@ -46,7 +46,6 @@
                 return ICON_CLOUD;
             }
 
-            // 기온별 추천 옷차림
             function getClothing(temp){
                 const t = parseFloat(temp);
                 if (t >= 28)   return '반팔, 반바지, 치마, 린넨옷';
@@ -61,9 +60,9 @@
 
             let addressName = '';
             fetch('../data/weather_keyword.json')
-                .then(r => r.json())
-                .then(data => {
-                    const kw = data.find(item => String(item.administrative_code) === code);
+                .then(r=>r.json())
+                .then(data=>{
+                    const kw = data.find(item=>String(item.administrative_code)===code);
                     if (!kw) { showInvalidModal(); throw 'no-address-kw'; }
                     addressName = kw.address;
                 });
@@ -71,9 +70,9 @@
             spinnerEl.classList.remove('d-none');
 
             fetch('../data/weather_address.json')
-                .then(r => r.json())
-                .then(data => {
-                    const select_address = data.find(item => String(item.administrative_code) === code);
+                .then(r=>r.json())
+                .then(data=>{
+                    const select_address = data.find(item=>String(item.administrative_code)===code);
                     if (!select_address) { showInvalidModal(); throw 'no-address'; }
                     const { base_date, base_time } = computeBaseDateTime();
                     const nx = Math.round(select_address.lat_decimal);
@@ -92,21 +91,22 @@
 
                     return fetch(apiUrl.toString());
                 })
-                .then(res => { if (!res.ok) throw 'api-error'; return res.json(); })
-                .then(json => {
+                .then(res=>{ if(!res.ok) throw 'api-error'; return res.json(); })
+                .then(json=>{
                     const items = json.response?.body?.items?.item || [];
-                    if (!items.length) {
+                    if (!items.length){
                         contentEl.innerHTML = '<p class="text-center">단기예보 정보가 없습니다.</p>';
                         return;
                     }
-                    const byDate = {}; items.forEach(e => {
-                        (byDate[e.fcstDate] = byDate[e.fcstDate]||[]).push(e);
+                    const byDate = {};
+                    items.forEach(e=>{
+                        (byDate[e.fcstDate]=byDate[e.fcstDate]||[]).push(e);
                     });
                     const latestByDate = {};
-                    Object.keys(byDate).sort().forEach(date => {
+                    Object.keys(byDate).sort().forEach(date=>{
                         const latestThis = {};
-                        byDate[date].forEach(e => {
-                            if (!latestThis[e.category] || e.fcstTime > latestThis[e.category].fcstTime) {
+                        byDate[date].forEach(e=>{
+                            if (!latestThis[e.category] || e.fcstTime>latestThis[e.category].fcstTime){
                                 latestThis[e.category] = e;
                             }
                         });
@@ -116,12 +116,12 @@
                     const todayDate = allDates[0];
                     const otherDates = allDates.slice(1);
 
-                    function formatDateYM(yyyymmdd) {
-                        const y = +yyyymmdd.slice(0,4),
-                            m = +yyyymmdd.slice(4,6)-1,
-                            d = +yyyymmdd.slice(6,8),
-                            dt = new Date(y,m,d),
-                            days = ['일','월','화','수','목','금','토'];
+                    function formatDateYM(yyyymmdd){
+                        const y=+yyyymmdd.slice(0,4),
+                            m=+yyyymmdd.slice(4,6)-1,
+                            d=+yyyymmdd.slice(6,8),
+                            dt=new Date(y,m,d),
+                            days=['일','월','화','수','목','금','토'];
                         return `${days[dt.getDay()]} (${String(m+1).padStart(2,'0')}.${String(d).padStart(2,'0')})`;
                     }
 
@@ -130,75 +130,80 @@
                     const block1 = document.createElement('div');
                     block1.className = 'd-flex align-items-center mb-5';
                     block1.innerHTML = `
-                    <img src="${getWeatherIcon(today)}" style="width:64px; margin-right:12px;">
-                    <div>
-                        <h3>${addressName}</h3>
-                        <div><strong>${formatDateYM(todayDate)}</strong></div>
-                        <div class="small text-muted">${skyMap[today.SKY.fcstValue]||''}</div>
-                        <table class="table table-borderless w-auto mt-2 mb-0">
-                          <tr><th>기온</th><td>${today.TMP.fcstValue}°C</td></tr>
-                          <tr><th>강수확률</th><td>${today.POP.fcstValue}%</td></tr>
-                          <tr><th>추천옷차림</th><td>${getClothing(today.TMP.fcstValue)}</td></tr>
-                        </table>
-                    </div>`;
+              <img src="${getWeatherIcon(today)}" style="width:64px; margin-right:12px;">
+              <div>
+                <h3>${addressName}</h3>
+                <div><strong>${formatDateYM(todayDate)}</strong></div>
+                <div class="small text-muted">${skyMap[today.SKY.fcstValue]||''}</div>
+                <table class="table table-borderless w-auto mt-2 mb-0">
+                  <tr><th>기온</th><td>${today.TMP.fcstValue}°C</td></tr>
+                  <tr><th>강수확률</th><td>${today.POP.fcstValue}%</td></tr>
+                  <tr><th>추천옷차림</th><td>${getClothing(today.TMP.fcstValue)}</td></tr>
+                </table>
+              </div>`;
                     contentEl.appendChild(block1);
 
                     // 주간 예보
-                    if (otherDates.length) {
+                    if (otherDates.length){
                         const block2 = document.createElement('div');
                         block2.className = 'mb-5';
                         block2.innerHTML = '<h3>주간 예보</h3>';
+
+                        // 가로 중앙 정렬
                         const wrapper = document.createElement('div');
-                        wrapper.className = 'd-flex w-100';
-                        otherDates.forEach(date => {
+                        wrapper.className = 'd-flex w-100 justify-content-center';
+
+                        otherDates.forEach(date=>{
                             const d = latestByDate[date];
                             const card = document.createElement('div');
                             card.className = 'card flex-fill text-center mx-1 p-2';
                             card.innerHTML = `
-                            <div class="fw-bold mb-1">${formatDateYM(date)}</div>
-                            <img src="${getWeatherIcon(d)}" alt="" style="width:24px; margin-bottom:8px;">
-                            <div class="d-flex justify-content-center mb-1">
-                                <span class="text-primary me-1">${d.TMN?.fcstValue||d.TMP.fcstValue}°</span>
-                                <span class="text-danger">${d.TMX?.fcstValue||d.TMP.fcstValue}°</span>
-                            </div>
-                            <div class="small mb-1">강수확률: ${d.POP.fcstValue}%</div>
-                            <div class="small mb-1">추천옷차림: ${getClothing(d.TMP?.fcstValue)}</div>
-                        `;
+                  <div class="fw-bold mb-1">${formatDateYM(date)}</div>
+                  <!-- 아이콘 2배 크기, 중앙 정렬 -->
+                  <img src="${getWeatherIcon(d)}" class="mx-auto d-block" style="width:96px; margin-bottom:8px;">
+                  <div class="d-flex justify-content-center mb-1">
+                    <span class="text-primary me-1">${d.TMN?.fcstValue||d.TMP.fcstValue}°</span>
+                    <span class="text-danger">${d.TMX?.fcstValue||d.TMP.fcstValue}°</span>
+                  </div>
+                  <div class="small mb-1">강수확률: ${d.POP.fcstValue}%</div>
+                  <div class="small mb-1">추천옷차림: ${getClothing(d.TMP?.fcstValue)}</div>
+                `;
                             wrapper.appendChild(card);
                         });
+
                         block2.appendChild(wrapper);
                         contentEl.appendChild(block2);
                     }
                 })
-                .catch(err => {
-                    if (err !== 'no-address') {
+                .catch(err=>{
+                    if (err!=='no-address') {
                         contentEl.innerHTML = '<p class="text-center text-danger">API 호출 중 오류가 발생했습니다.</p>';
                     }
                 })
-                .finally(() => spinnerEl.classList.add('d-none'));
+                .finally(()=> spinnerEl.classList.add('d-none'));
 
             function computeBaseDateTime(){
-                const now = new Date(), h = now.getHours(), m = now.getMinutes();
-                const cand = [
+                const now=new Date(), h=now.getHours(), m=now.getMinutes();
+                const cand=[
                     {hh:23,mm:0,str:'2300'},{hh:20,mm:0,str:'2000'},
                     {hh:17,mm:0,str:'1700'},{hh:14,mm:0,str:'1400'},
-                    {hh:11,mm:0,str:'1100'},{hh:8, mm:0,str:'0800'},
-                    {hh:5, mm:0,str:'0500'},{hh:2, mm:0,str:'0200'}
+                    {hh:11,mm:0,str:'1100'},{hh: 8,mm:0,str:'0800'},
+                    {hh: 5,mm:0,str:'0500'},{hh: 2,mm:0,str:'0200'}
                 ];
-                for (const c of cand) {
-                    if (h > c.hh || (h === c.hh && m >= 10)) {
-                        const Y = now.getFullYear(), Mo = now.getMonth()+1, D = now.getDate();
+                for (const c of cand){
+                    if (h>c.hh||(h===c.hh&&m>=10)){
+                        const Y=now.getFullYear(), Mo=now.getMonth()+1, D=now.getDate();
                         return {
-                            base_date: `${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
-                            base_time: c.str
+                            base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
+                            base_time:c.str
                         };
                     }
                 }
-                const yst = new Date(now - 86400000),
-                    Y = yst.getFullYear(), Mo = yst.getMonth()+1, D = yst.getDate();
+                const yst=new Date(now-86400000), Y=yst.getFullYear(),
+                    Mo=yst.getMonth()+1, D=yst.getDate();
                 return {
-                    base_date: `${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
-                    base_time: '2300'
+                    base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
+                    base_time:'2300'
                 };
             }
         });
@@ -214,12 +219,10 @@
 </head>
 <body>
 <!-- 로딩 스피너 -->
-<div
-        id="loadingSpinner"
-        class="d-none position-fixed top-50 start-50 translate-middle
-               d-flex justify-content-center align-items-center"
-        style="z-index:1050;"
->
+<div id="loadingSpinner"
+     class="d-none position-fixed top-50 start-50 translate-middle
+                d-flex justify-content-center align-items-center"
+     style="z-index:1050;">
     <div class="spinner-border text-dark" role="status">
         <span class="visually-hidden">로딩중...</span>
     </div>
