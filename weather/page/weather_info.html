@@ -39,22 +39,22 @@
                 const pop = parseInt(entry.POP?.fcstValue,10) || 0;
                 const sky = entry.SKY?.fcstValue;
                 if (['1','2','4'].includes(String(pty))) return ICON_RAIN;
-                if (String(pty) === '3') return ICON_SNOW;
-                if (pop >= 50) return ICON_RAIN;
-                if (String(sky) === '1') return ICON_SUNNY;
-                if (['3','4'].includes(String(sky))) return ICON_CLOUD;
+                if (String(pty) === '3')            return ICON_SNOW;
+                if (pop >= 50)                      return ICON_RAIN;
+                if (String(sky) === '1')            return ICON_SUNNY;
+                if (['3','4'].includes(String(sky)))return ICON_CLOUD;
                 return ICON_CLOUD;
             }
 
             function getClothing(temp){
                 const t = parseFloat(temp);
-                if (t >= 28)   return '반팔, 반바지, 치마, 린넨옷';
-                if (t >= 23)   return '반팔, 얇은 셔츠, 반바지, 면바지';
-                if (t >= 20)   return '블라우스, 긴팔티, 면바지, 슬랙스';
-                if (t >= 17)   return '얇은 가디건, 니트, 맨투맨, 후드, 긴 바지';
-                if (t >= 12)   return '자켓, 가디건, 청자켓, 니트, 스타킹, 청바지';
-                if (t >= 9)    return '트렌치코트, 야상, 점퍼, 스타킹, 기모바지';
-                if (t >= 5)    return '울 코트, 히트텍, 가죽옷, 기모';
+                if (t >= 28) return '반팔, 반바지, 치마, 린넨옷';
+                if (t >= 23) return '반팔, 얇은 셔츠, 반바지, 면바지';
+                if (t >= 20) return '블라우스, 긴팔티, 면바지, 슬랙스';
+                if (t >= 17) return '얇은 가디건, 니트, 맨투맨, 후드, 긴 바지';
+                if (t >= 12) return '자켓, 가디건, 청자켓, 니트, 스타킹, 청바지';
+                if (t >= 9)  return '트렌치코트, 야상, 점퍼, 스타킹, 기모바지';
+                if (t >= 5)  return '울 코트, 히트텍, 가죽옷, 기모';
                 return '패딩, 두꺼운 코트, 누빔옷, 기모';
             }
 
@@ -100,20 +100,20 @@
                     }
                     const byDate = {};
                     items.forEach(e=>{
-                        (byDate[e.fcstDate]=byDate[e.fcstDate]||[]).push(e);
+                        (byDate[e.fcstDate] = byDate[e.fcstDate]||[]).push(e);
                     });
                     const latestByDate = {};
                     Object.keys(byDate).sort().forEach(date=>{
                         const latestThis = {};
                         byDate[date].forEach(e=>{
-                            if (!latestThis[e.category] || e.fcstTime>latestThis[e.category].fcstTime){
+                            if (!latestThis[e.category] || e.fcstTime > latestThis[e.category].fcstTime){
                                 latestThis[e.category] = e;
                             }
                         });
                         latestByDate[date] = latestThis;
                     });
                     const allDates = Object.keys(latestByDate).sort();
-                    const todayDate = allDates[0];
+                    const todayDate  = allDates[0];
                     const otherDates = allDates.slice(1);
 
                     function formatDateYM(yyyymmdd){
@@ -125,31 +125,27 @@
                         return `${days[dt.getDay()]} (${String(m+1).padStart(2,'0')}.${String(d).padStart(2,'0')})`;
                     }
 
-                    // 오늘의 날씨
+                    // ── 오늘의 날씨 ──
                     const today = latestByDate[todayDate];
                     const block1 = document.createElement('div');
-                    block1.className = 'd-flex align-items-center mb-5';
+                    block1.className = 'text-center mb-5';
                     block1.innerHTML = `
-              <img src="${getWeatherIcon(today)}" style="width:64px; margin-right:12px;">
-              <div>
-                <h3>${addressName}</h3>
-                <div><strong>${formatDateYM(todayDate)}</strong></div>
-                <div class="small text-muted">${skyMap[today.SKY.fcstValue]||''}</div>
-                <table class="table table-borderless w-auto mt-2 mb-0">
-                  <tr><th>기온</th><td>${today.TMP.fcstValue}°C</td></tr>
-                  <tr><th>강수확률</th><td>${today.POP.fcstValue}%</td></tr>
-                  <tr><th>추천옷차림</th><td>${getClothing(today.TMP.fcstValue)}</td></tr>
-                </table>
-              </div>`;
+          <h3>${addressName}</h3>
+          <div class="d-flex justify-content-center align-items-center my-3">
+            <img src="${getWeatherIcon(today)}" alt="icon" style="width:96px;">
+            <span class="display-1 ms-3">${today.TMP.fcstValue}°</span>
+          </div>
+          <div class="mb-1">강수확률: ${today.POP.fcstValue}%</div>
+          <div>추천옷차림: ${getClothing(today.TMP.fcstValue)}</div>
+        `;
                     contentEl.appendChild(block1);
 
-                    // 주간 예보
+                    // ── 주간 예보 ──
                     if (otherDates.length){
                         const block2 = document.createElement('div');
                         block2.className = 'mb-5';
                         block2.innerHTML = '<h3>주간 예보</h3>';
 
-                        // 가로 중앙 정렬
                         const wrapper = document.createElement('div');
                         wrapper.className = 'd-flex w-100 justify-content-center';
 
@@ -158,16 +154,15 @@
                             const card = document.createElement('div');
                             card.className = 'card flex-fill text-center mx-1 p-2';
                             card.innerHTML = `
-                  <div class="fw-bold mb-1">${formatDateYM(date)}</div>
-                  <!-- 아이콘 2배 크기, 중앙 정렬 -->
-                  <img src="${getWeatherIcon(d)}" class="mx-auto d-block" style="width:96px; margin-bottom:8px;">
-                  <div class="d-flex justify-content-center mb-1">
-                    <span class="text-primary me-1">${d.TMN?.fcstValue||d.TMP.fcstValue}°</span>
-                    <span class="text-danger">${d.TMX?.fcstValue||d.TMP.fcstValue}°</span>
-                  </div>
-                  <div class="small mb-1">강수확률: ${d.POP.fcstValue}%</div>
-                  <div class="small mb-1">추천옷차림: ${getClothing(d.TMP?.fcstValue)}</div>
-                `;
+              <div class="fw-bold mb-1">${formatDateYM(date)}</div>
+              <img src="${getWeatherIcon(d)}" class="mx-auto d-block mb-2" style="width:96px;">
+              <div class="d-flex justify-content-center mb-1">
+                <span class="text-primary me-1">${d.TMN?.fcstValue||d.TMP.fcstValue}°</span>
+                <span class="text-danger">${d.TMX?.fcstValue||d.TMP.fcstValue}°</span>
+              </div>
+              <div class="small mb-1">강수확률: ${d.POP.fcstValue}%</div>
+              <div class="small">추천옷차림: ${getClothing(d.TMP?.fcstValue)}</div>
+            `;
                             wrapper.appendChild(card);
                         });
 
@@ -176,7 +171,7 @@
                     }
                 })
                 .catch(err=>{
-                    if (err!=='no-address') {
+                    if (err !== 'no-address') {
                         contentEl.innerHTML = '<p class="text-center text-danger">API 호출 중 오류가 발생했습니다.</p>';
                     }
                 })
@@ -191,7 +186,7 @@
                     {hh: 5,mm:0,str:'0500'},{hh: 2,mm:0,str:'0200'}
                 ];
                 for (const c of cand){
-                    if (h>c.hh||(h===c.hh&&m>=10)){
+                    if (h>c.hh || (h===c.hh && m>=10)){
                         const Y=now.getFullYear(), Mo=now.getMonth()+1, D=now.getDate();
                         return {
                             base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
@@ -199,8 +194,8 @@
                         };
                     }
                 }
-                const yst=new Date(now-86400000), Y=yst.getFullYear(),
-                    Mo=yst.getMonth()+1, D=yst.getDate();
+                const yst=new Date(now-86400000),
+                    Y=yst.getFullYear(), Mo=yst.getMonth()+1, D=yst.getDate();
                 return {
                     base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
                     base_time:'2300'
@@ -221,7 +216,7 @@
 <!-- 로딩 스피너 -->
 <div id="loadingSpinner"
      class="d-none position-fixed top-50 start-50 translate-middle
-                d-flex justify-content-center align-items-center"
+              d-flex justify-content-center align-items-center"
      style="z-index:1050;">
     <div class="spinner-border text-dark" role="status">
         <span class="visually-hidden">로딩중...</span>
