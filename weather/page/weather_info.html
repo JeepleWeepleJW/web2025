@@ -99,7 +99,7 @@
                             d=parseInt(yyyymmdd.slice(6,8));
                         const dt = new Date(y,m,d);
                         const days = ['일','월','화','수','목','금','토'];
-                        return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')} (${days[dt.getDay()]}요일)`;
+                        return `${days[dt.getDay()]}요일</br>(${String(m+1).padStart(2,'0')}.${String(d).padStart(2,'0')})`;
                     };
 
                     // ────────────────────────────────────────────
@@ -125,13 +125,13 @@
                     contentEl.appendChild(block1);
 
                     // ────────────────────────────────────────────
-                    // 컨텐츠 2: 다음 날씨 (그 외 날짜)
+                    // 컨텐츠 2: 주간 예보
                     // ────────────────────────────────────────────
                     if(otherDates.length){
                         const block2 = document.createElement('div');
                         block2.className = 'text-center';
                         const h2 = document.createElement('h3');
-                        h2.textContent = '앞으로의 날씨';
+                        h2.textContent = '주간 예보';
                         block2.appendChild(h2);
 
                         const row = document.createElement('div');
@@ -152,6 +152,8 @@
               <h5 class="card-title">${formatDate(date)}</h5>
               <p class="card-text mb-1">최저: ${data.TMN?.fcstValue||'-'}°C</p>
               <p class="card-text mb-1">최고: ${data.TMX?.fcstValue||'-'}°C</p>
+              <p class="card-text mb-1">강수확률: ${data.POP?.fcstValue||'-'}°C</p>
+              <p class="card-text mb-1">하늘상태: ${skyMap[data.SKY.fcstValue]||'-'}°C</p>
               <p class="card-text">기온: ${data.TMP?.fcstValue||'-'}°C</p>
             `;
                             card.appendChild(cardBody);
