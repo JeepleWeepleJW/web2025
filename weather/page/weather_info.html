@@ -103,8 +103,8 @@
 
                     // 예보지점 X,Y 좌표: select_address.lon_decimal, select_address.lat_decimal
                     // (필요시 소수점을 반올림)
-                    const nx = Math.round(select_address.lon_decimal);
-                    const ny = Math.round(select_address.lat_decimal);
+                    const nx = Math.round(select_address.lat_decimal);
+                    const ny = Math.round(select_address.lon_decimal);
 
                     // 공공데이터포털에서 발급받은 단기예보 API 서비스키 (URL-Encode된 상태로 넣어주세요)
                     const serviceKey = 'XBi6TBHmrnZ0J1zY7Xu4PpdsrKrOXjxRm8l7LSDxsdPpF0RMvZUVVhQF1nYQRQ87en0GXMRwD4y/XcPkr+BXAw==';
