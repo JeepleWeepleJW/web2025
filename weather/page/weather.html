@@ -12,91 +12,77 @@
         document.addEventListener('DOMContentLoaded', () => {
             // JSON 파일 로드
             fetch('../data/weather_keyword.json')
-                .then(response => response.json())
-                .then(jsonData => {
-                    addresses = jsonData;
-                })
-                .catch(err => {
-                    console.error('JSON 로드 실패:', err);
-                });
+                .then(r => r.json())
+                .then(jsonData => addresses = jsonData)
+                .catch(err => console.error('JSON 로드 실패:', err));
 
-            const inputEl = document.getElementById('addressInput');
+            const inputEl       = document.getElementById('addressInput');
             const suggestionsEl = document.getElementById('suggestions');
-            const formEl = document.getElementById('searchForm');
-            const modalEl = document.getElementById('resultModal');
-            const modalTitleEl = modalEl.querySelector('.modal-title');
-            const modalBodyEl = modalEl.querySelector('.modal-body');
+            const formEl        = document.getElementById('searchForm');
+            const modalEl       = document.getElementById('resultModal');
+            const modalTitle    = modalEl.querySelector('.modal-title');
+            const modalBody     = modalEl.querySelector('.modal-body');
 
-            // 입력 이벤트 처리: 드롭다운 리스트 표시
+            // 입력 이벤트: 자동완성
             inputEl.addEventListener('input', () => {
-                const query = inputEl.value.trim();
+                const q = inputEl.value.trim();
                 suggestionsEl.innerHTML = '';
-
-                if (query.length === 0) {
-                    return;
-                }
-
-                const matches = addresses.filter(item =>
-                    item.address.includes(query)
-                );
-
-                matches.forEach(item => {
-                    const li = document.createElement('button');
-                    li.type = 'button';
-                    li.className = 'list-group-item list-group-item-action';
-                    li.textContent = item.address;
-                    li.addEventListener('click', () => {
-                        inputEl.value = item.address;
-                        suggestionsEl.innerHTML = '';
+                if (!q) return;
+                addresses
+                    .filter(item => item.address.includes(q))
+                    .forEach(item => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'list-group-item list-group-item-action';
+                        btn.textContent = item.address;
+                        btn.onclick = () => {
+                            inputEl.value = item.address;
+                            suggestionsEl.innerHTML = '';
+                        };
+                        suggestionsEl.appendChild(btn);
                     });
-                    suggestionsEl.appendChild(li);
-                });
             });
 
-            // 외부 클릭 시 드롭다운 닫기
-            document.addEventListener('click', (e) => {
+            // 외부 클릭 시 자동완성 닫기
+            document.addEventListener('click', e => {
                 if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
                     suggestionsEl.innerHTML = '';
                 }
             });
 
-            // 폼 제출 처리: 정확히 일치하는 address 검색
-            formEl.addEventListener('submit', (e) => {
+            // 검색 제출
+            formEl.addEventListener('submit', e => {
                 e.preventDefault();
-                const entered = inputEl.value.trim();
-                const matched = addresses.find(item => item.address === entered);
-
-                if (matched) {
-                    // administrative_code를 쿼리 파라미터와 함께 weather_info.html로 이동
-                    window.location.href = `weather_info.html?code=${matched.administrative_code}`;
+                const val = inputEl.value.trim();
+                const found = addresses.find(item => item.address === val);
+                if (found) {
+                    window.location.href = `weather_info.html?code=${found.administrative_code}`;
                 } else {
-                    // 오류 모달 표시
-                    modalTitleEl.textContent = '검색 오류';
-                    modalBodyEl.textContent = '주소를 정확하게 입력해주세요.';
-                    const bsModal = new bootstrap.Modal(modalEl);
-                    bsModal.show();
+                    modalTitle.textContent = '검색 오류';
+                    modalBody.textContent = '주소를 정확하게 입력해주세요.';
+                    new bootstrap.Modal(modalEl).show();
                 }
             });
         });
     </script>
     <style>
-        /* 드롭다운 위치 및 스크롤 설정 */
-        .suggestions-container {
-            position: relative;
-        }
+        .suggestions-container { position: relative; }
         #suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            max-height: 300px;
-            overflow-y: auto;
+            position: absolute; top: 100%; left: 0; right: 0;
+            z-index: 1000; max-height: 300px; overflow-y: auto;
         }
     </style>
 </head>
 <body class="bg-white d-flex justify-content-center align-items-center vh-100">
-<form id="searchForm" class="w-100" style="max-width: 600px;" action="#" method="GET">
+<form id="searchForm" class="w-100" style="max-width:600px;" action="#" method="GET">
+    <!-- 오늘 문구: 주소 입력 위에 중앙 정렬 -->
+    <div class="row justify-content-center mb-2">
+        <div class="col-10 text-center">
+            <h2>오늘의 날씨</h2>
+        </div>
+    </div>
+
+    <!-- 주소 입력 및 자동완성 -->
     <div class="row justify-content-center mb-3">
         <div class="col-10 suggestions-container">
             <input
@@ -120,7 +106,7 @@
     </div>
 </form>
 
-<!-- Bootstrap Modal: 주소 입력 오류 시에만 사용 -->
+<!-- 오류 모달 -->
 <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -128,9 +114,7 @@
                 <h5 class="modal-title" id="resultModalLabel">알림</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
             </div>
-            <div class="modal-body">
-                <!-- JavaScript로 오류 메시지를 출력 -->
-            </div>
+            <div class="modal-body"><!-- 오류 메시지 --></div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
             </div>
