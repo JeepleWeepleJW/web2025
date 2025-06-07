@@ -38,28 +38,34 @@
 
             // 우선순위에 따른 아이콘 결정 함수
             function getWeatherIcon(entry){
-                // entry: { SK Y, PTY, POP, ... }
                 const pty = entry.PTY?.fcstValue;
                 const pop = parseInt(entry.POP?.fcstValue,10) || 0;
                 const sky = entry.SKY?.fcstValue;
-                // 1) PTY == 1,2,4 -> 비
                 if ([ '1','2','4' ].includes(String(pty))) return ICON_RAIN;
-                // 2) PTY == 3 -> 눈
                 if (String(pty) === '3') return ICON_SNOW;
-                // 3) POP >= 50 -> 비
                 if (pop >= 50) return ICON_RAIN;
-                // 4) SKY == 1 -> 맑음
                 if (String(sky) === '1') return ICON_SUNNY;
-                // 5) SKY == 3,4 -> 흐림
                 if ([ '3','4' ].includes(String(sky))) return ICON_CLOUD;
-                // 기본 구름
                 return ICON_CLOUD;
             }
+
+            // 주소명 미리 가져오기 (weather_keyword.json)
+            let addressName = '';
+            fetch('../data/weather_keyword.json')
+                .then(r => r.json())
+                .then(data => {
+                    const kw = data.find(item => String(item.administrative_code) === code);
+                    if (!kw) {
+                        showInvalidModal();
+                        throw 'no-address-kw';
+                    }
+                    addressName = kw.address;
+                });
 
             // 스피너 표시
             spinnerEl.classList.remove('d-none');
 
-            // 1) 주소 JSON
+            // 1) 주소 JSON (기존 로직 그대로)
             fetch('../data/weather_address.json')
                 .then(r=>r.json())
                 .then(data=>{
@@ -124,7 +130,7 @@
                     const block1 = document.createElement('div');
                     block1.className='text-center mb-5';
                     block1.innerHTML=`
-          <h3>오늘의 날씨</h3>
+          <h3>${addressName}</h3>
           <div><strong>${formatDateYM(todayDate)}</strong></div>
         `;
                     const td = latestByDate[todayDate];
