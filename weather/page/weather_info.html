@@ -28,7 +28,7 @@
             }
             if (!code) { showInvalidModal(); return; }
 
-            const skyMap = { '1':'맑음','3':'구름많음','4':'흐림' };
+            const skyMap     = { '1':'맑음','3':'구름많음','4':'흐림' };
             const ICON_SUNNY = '../img/ic_weather_sunny.png';
             const ICON_CLOUD = '../img/ic_weather_cloud.png';
             const ICON_RAIN  = '../img/ic_weather_rain.png';
@@ -100,7 +100,7 @@
                         return;
                     }
 
-                    // group & latest
+                    // 그룹핑 & 최신 항목 추출
                     const byDate = {};
                     items.forEach(e=> (byDate[e.fcstDate] = byDate[e.fcstDate]||[]).push(e));
                     const latestByDate = {};
@@ -124,12 +124,13 @@
                     block1.className = 'section section--today text-center mb-5';
                     block1.innerHTML = `
             <h3 class="section__title">오늘</h3>
+            <div class="mb-2 text-secondary">${addressName}</div>
             <div class="d-flex justify-content-center align-items-center my-3">
               <img src="${getWeatherIcon(today)}" alt="icon" style="width:96px;">
               <span class="display-1 ms-3">${today.TMP.fcstValue}°</span>
             </div>
-            <div class="mb-1">강수확률: ${today.POP.fcstValue}%</div>
-            <div>추천옷차림: ${getClothing(today.TMP.fcstValue)}</div>
+            <div class="mb-1"><strong>강수확률:</strong> ${today.POP.fcstValue}%</div>
+            <div><strong>추천옷차림:</strong> ${getClothing(today.TMP.fcstValue)}</div>
           `;
                     contentEl.appendChild(block1);
 
@@ -139,8 +140,8 @@
                         block2.className = 'section section--weekly text-center mb-5';
                         block2.innerHTML = `<h3 class="section__title">주간 예보</h3>`;
 
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'd-flex w-100 justify-content-center flex-wrap';
+                        const row = document.createElement('div');
+                        row.className = 'row';
 
                         otherDates.forEach(date=>{
                             const d = latestByDate[date];
@@ -152,22 +153,25 @@
                             const days = ['일','월','화','수','목','금','토'];
                             const label = days[dt.getDay()];
 
-                            const card = document.createElement('div');
-                            card.className = 'card flex-fill text-center mx-1 p-2 weekly-card';
-                            card.innerHTML = `
-                <div class="fw-bold mb-1">${label}</div>
-                <img src="${getWeatherIcon(d)}" class="mx-auto d-block mb-2" style="width:96px;">
-                <div class="d-flex justify-content-center mb-1">
-                  <span class="text-primary me-1">${d.TMN?.fcstValue||d.TMP.fcstValue}°</span>
-                  <span class="text-danger">${d.TMX?.fcstValue||d.TMP.fcstValue}°</span>
-                </div>
-                <div class="small mb-1">강수확률: ${d.POP.fcstValue}%</div>
-                <div class="small">추천옷차림: ${getClothing(d.TMP?.fcstValue)}</div>
-              `;
-                            wrapper.appendChild(card);
+                            // 각 행에 두 개씩 배치
+                            const col = document.createElement('div');
+                            col.className = 'col-6 mb-4';
+
+                            col.innerHTML = `
+                <div class="card h-100 text-center p-3">
+                  <div class="fw-bold mb-2">${label}</div>
+                  <img src="${getWeatherIcon(d)}" class="mx-auto d-block mb-2" style="width:96px;">
+                  <div class="d-flex justify-content-center mb-2">
+                    <span class="text-primary me-2">${d.TMN?.fcstValue||d.TMP.fcstValue}°</span>
+                    <span class="text-danger">${d.TMX?.fcstValue||d.TMP.fcstValue}°</span>
+                  </div>
+                  <div class="small mb-1"><strong>강수확률:</strong> ${d.POP.fcstValue}%</div>
+                  <div class="small"><strong>추천옷차림:</strong> ${getClothing(d.TMP?.fcstValue)}</div>
+                </div>`;
+                            row.appendChild(col);
                         });
 
-                        block2.appendChild(wrapper);
+                        block2.appendChild(row);
                         contentEl.appendChild(block2);
                     }
                 })
@@ -178,6 +182,7 @@
                 })
                 .finally(()=> spinnerEl.classList.add('d-none'));
 
+            // helper: 발표일시 계산
             function computeBaseDateTime(){
                 const now=new Date(), h=now.getHours(), m=now.getMinutes();
                 const cand=[
@@ -232,7 +237,7 @@
             font-weight: 600;
             color: #007bff;
         }
-        /* weekly cards spacing */
+        /* weekly card sizing */
         .weekly-card {
             min-width: 100px;
             max-width: 120px;
@@ -243,7 +248,7 @@
 <!-- 로딩 스피너 -->
 <div id="loadingSpinner"
      class="d-none position-fixed top-50 start-50 translate-middle
-              d-flex justify-content-center align-items-center"
+                d-flex justify-content-center align-items-center"
      style="z-index:1050;">
     <div class="spinner-border text-dark" role="status">
         <span class="visually-hidden">로딩중...</span>
