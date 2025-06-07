@@ -18,34 +18,34 @@
             const contentEl  = document.getElementById('content');
             const spinnerEl  = document.getElementById('loadingSpinner');
 
-            function redirectToWeather() {
-                window.location.href = 'weather.html';
-            }
-            function showInvalidModal() {
+            function redirectToWeather() { window.location.href = 'weather.html'; }
+            function showInvalidModal(){
                 modalTitle.textContent = '잘못된 접근';
                 modalBody.textContent  = '잘못된 접근입니다.';
                 new bootstrap.Modal(modalEl).show();
                 closeBtn.addEventListener('click', redirectToWeather);
                 confirmBtn.addEventListener('click', redirectToWeather);
             }
-            if (!code) { showInvalidModal(); return; }
+            if(!code){ showInvalidModal(); return; }
 
-            const skyMap = { '1':'맑음', '3':'구름많음', '4':'흐림' };
+            const skyMap = { '1':'맑음','3':'구름많음','4':'흐림' };
 
-            // ■ 로딩 스피너 표시
+            // 스피너 표시
             spinnerEl.classList.remove('d-none');
 
             // 1) 주소 JSON 로드
             fetch('../data/weather_address.json')
-                .then(r => r.json())
-                .then(data => {
-                    const select_address = data.find(item => String(item.administrative_code) === code);
-                    if (!select_address) { showInvalidModal(); throw 'no-address'; }
+                .then(r=>r.json())
+                .then(data=>{
+                    const select_address = data.find(item=>String(item.administrative_code)===code);
+                    if(!select_address){ showInvalidModal(); throw 'no-address'; }
 
-                    // 발표시각 계산, 좌표 준비
+                    // 발표일시, 좌표 계산
                     const { base_date, base_time } = computeBaseDateTime();
                     const nx = Math.round(select_address.lat_decimal);
                     const ny = Math.round(select_address.lon_decimal);
+
+                    // API 호출 URL 조립
                     const serviceKey = 'XBi6TBHmrnZ0J1zY7Xu4PpdsrKrOXjxRm8l7LSDxsdPpF0RMvZUVVhQF1nYQRQ87en0GXMRwD4y/XcPkr+BXAw==';
                     const apiUrl = new URL('https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst');
                     apiUrl.searchParams.append('serviceKey', serviceKey);
@@ -59,121 +59,166 @@
 
                     return fetch(apiUrl.toString());
                 })
-                .then(res => {
-                    if (!res.ok) throw 'api-error';
+                .then(res=>{
+                    if(!res.ok) throw 'api-error';
                     return res.json();
                 })
-                .then(json => {
+                .then(json=>{
                     const items = json.response?.body?.items?.item || [];
-                    if (!items.length) {
-                        contentEl.innerHTML = '<p>단기예보 정보가 없습니다.</p>';
+                    if(!items.length){
+                        contentEl.innerHTML = '<p class="text-center">단기예보 정보가 없습니다.</p>';
                         return;
                     }
 
-                    // 그룹핑 & 최신 데이터 추출
+                    // 2) 날짜별 그룹핑 & 카테고리별 최신 데이터만
                     const byDate = {};
-                    items.forEach(e => {
-                        byDate[e.fcstDate] = byDate[e.fcstDate] || [];
+                    items.forEach(e=>{
+                        byDate[e.fcstDate] = byDate[e.fcstDate]||[];
                         byDate[e.fcstDate].push(e);
                     });
                     const latestByDate = {};
-                    Object.keys(byDate).sort().forEach(date => {
+                    Object.keys(byDate).sort().forEach(date=>{
                         const latestThis = {};
-                        byDate[date].forEach(e => {
-                            if (!latestThis[e.category] || e.fcstTime > latestThis[e.category].fcstTime) {
-                                latestThis[e.category] = e;
+                        byDate[date].forEach(e=>{
+                            if(!latestThis[e.category] || e.fcstTime>latestThis[e.category].fcstTime){
+                                latestThis[e.category]=e;
                             }
                         });
                         latestByDate[date] = latestThis;
                     });
 
-                    // 화면 렌더링
-                    const heading = document.createElement('h4');
-                    heading.textContent = '날짜별 최신 단기예보';
-                    contentEl.appendChild(heading);
+                    // 오늘 날짜(컨텐츠1) / 그 외(컨텐츠2) 분리
+                    const allDates = Object.keys(latestByDate).sort();
+                    const todayDate = Object.keys(latestByDate)[0]; // 최우선 그룹을 오늘로 가정
+                    const otherDates = allDates.filter(d=>d!==todayDate);
 
-                    Object.keys(latestByDate).forEach(date => {
-                        const groupDiv = document.createElement('div');
-                        groupDiv.className = 'mb-4';
-                        const title = document.createElement('h5');
-                        title.textContent = `예보일자: ${date}`;
-                        groupDiv.appendChild(title);
+                    // helper: YYYYMMDD → "YYYY-MM-DD (요일)"
+                    const formatDate = yyyymmdd=>{
+                        const y=parseInt(yyyymmdd.slice(0,4)),
+                            m=parseInt(yyyymmdd.slice(4,6))-1,
+                            d=parseInt(yyyymmdd.slice(6,8));
+                        const dt = new Date(y,m,d);
+                        const days = ['일','월','화','수','목','금','토'];
+                        return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')} (${days[dt.getDay()]}요일)`;
+                    };
 
-                        const ul = document.createElement('ul');
-                        ul.className = 'list-group';
+                    // ────────────────────────────────────────────
+                    // 컨텐츠 1: 오늘 날씨
+                    // ────────────────────────────────────────────
+                    const block1 = document.createElement('div');
+                    block1.className = 'text-center mb-5';
+                    const h1 = document.createElement('h3');
+                    h1.textContent = '오늘의 날씨';
+                    block1.appendChild(h1);
 
-                        Object.values(latestByDate[date]).forEach(entry => {
-                            const li = document.createElement('li');
-                            li.className = 'list-group-item';
-                            let val = entry.fcstValue;
-                            if (entry.category === 'SKY') val = skyMap[val] || val;
-                            li.textContent =
-                                `예보시각: ${entry.fcstTime} | ` +
-                                `카테고리: ${entry.category} | ` +
-                                `예보값: ${val}`;
-                            ul.appendChild(li);
+                    const todayData = latestByDate[todayDate];
+                    const tbl1 = document.createElement('table');
+                    tbl1.className = 'table table-borderless w-auto mx-auto';
+                    tbl1.innerHTML = `
+          <tr><th>일시</th><td>${formatDate(todayDate)}</td></tr>
+          <tr><th>하늘상태</th><td>${skyMap[todayData.SKY.fcstValue]||todayData.SKY.fcstValue}</td></tr>
+          <tr><th>강수형태</th><td>${todayData.PTY.fcstValue}</td></tr>
+          <tr><th>강수확률</th><td>${todayData.POP.fcstValue}%</td></tr>
+          <tr><th>현재기온</th><td>${todayData.TMP.fcstValue}°C</td></tr>
+        `;
+                    block1.appendChild(tbl1);
+                    contentEl.appendChild(block1);
+
+                    // ────────────────────────────────────────────
+                    // 컨텐츠 2: 다음 날씨 (그 외 날짜)
+                    // ────────────────────────────────────────────
+                    if(otherDates.length){
+                        const block2 = document.createElement('div');
+                        block2.className = 'text-center';
+                        const h2 = document.createElement('h3');
+                        h2.textContent = '앞으로의 날씨';
+                        block2.appendChild(h2);
+
+                        const row = document.createElement('div');
+                        row.className = 'row justify-content-center';
+
+                        otherDates.forEach(date=>{
+                            const data = latestByDate[date];
+                            const col = document.createElement('div');
+                            col.className = 'col-10 col-md-3 mb-3';
+
+                            const card = document.createElement('div');
+                            card.className = 'card h-100';
+
+                            const cardBody = document.createElement('div');
+                            cardBody.className = 'card-body text-center';
+
+                            cardBody.innerHTML = `
+              <h5 class="card-title">${formatDate(date)}</h5>
+              <p class="card-text mb-1">최저: ${data.TMN?.fcstValue||'-'}°C</p>
+              <p class="card-text mb-1">최고: ${data.TMX?.fcstValue||'-'}°C</p>
+              <p class="card-text">기온: ${data.TMP?.fcstValue||'-'}°C</p>
+            `;
+                            card.appendChild(cardBody);
+                            col.appendChild(card);
+                            row.appendChild(col);
                         });
 
-                        groupDiv.appendChild(ul);
-                        contentEl.appendChild(groupDiv);
-                    });
-                })
-                .catch(err => {
-                    if (err !== 'no-address') {
-                        contentEl.innerHTML = '<p>단기예보조회 API 호출 중 오류가 발생했습니다.</p>';
+                        block2.appendChild(row);
+                        contentEl.appendChild(block2);
                     }
                 })
-                .finally(() => {
-                    // ■ 로딩 스피너 숨기기
+                .catch(err=>{
+                    if(err!=='no-address'){
+                        contentEl.innerHTML = '<p class="text-center text-danger">API 호출 중 오류가 발생했습니다.</p>';
+                    }
+                })
+                .finally(()=>{
                     spinnerEl.classList.add('d-none');
                 });
 
             // helper: 발표일시 계산
-            function computeBaseDateTime() {
-                const now = new Date(), h = now.getHours(), m = now.getMinutes();
-                const candidates = [
-                    { hh:23, mm:0, str:'2300' },
-                    { hh:20, mm:0, str:'2000' },
-                    { hh:17, mm:0, str:'1700' },
-                    { hh:14, mm:0, str:'1400' },
-                    { hh:11, mm:0, str:'1100' },
-                    { hh: 8, mm:0, str:'0800' },
-                    { hh: 5, mm:0, str:'0500' },
-                    { hh: 2, mm:0, str:'0200' }
+            function computeBaseDateTime(){
+                const now=new Date(),h=now.getHours(),m=now.getMinutes();
+                const cand=[
+                    {hh:23,mm:0,str:'2300'},
+                    {hh:20,mm:0,str:'2000'},
+                    {hh:17,mm:0,str:'1700'},
+                    {hh:14,mm:0,str:'1400'},
+                    {hh:11,mm:0,str:'1100'},
+                    {hh: 8,mm:0,str:'0800'},
+                    {hh: 5,mm:0,str:'0500'},
+                    {hh: 2,mm:0,str:'0200'}
                 ];
-                for (let c of candidates) {
-                    if (h>c.hh || (h===c.hh && m>=10)) {
-                        const y=now.getFullYear(), mmn=now.getMonth()+1, dd=now.getDate();
+                for(let c of cand){
+                    if(h>c.hh||(h===c.hh&&m>=10)){
+                        const Y=now.getFullYear(),Mo=now.getMonth()+1,D=now.getDate();
                         return {
-                            base_date: `${y}${String(mmn).padStart(2,'0')}${String(dd).padStart(2,'0')}`,
-                            base_time: c.str
+                            base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
+                            base_time:c.str
                         };
                     }
                 }
-                const yst = new Date(now - 86400000),
-                    y=yst.getFullYear(), mmn=yst.getMonth()+1, dd=yst.getDate();
+                const yst=new Date(now-86400000),
+                    Y=yst.getFullYear(),Mo=yst.getMonth()+1,D=yst.getDate();
                 return {
-                    base_date: `${y}${String(mmn).padStart(2,'0')}${String(dd).padStart(2,'0')}`,
-                    base_time: '2300'
+                    base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
+                    base_time:'2300'
                 };
             }
         });
     </script>
     <style>
         body {
-            background-color: #ffffff;
-            color: #000000;
-            font-family: Arial, sans-serif;
-            padding-top: 20px;
+            background-color:#fff;
+            color:#000;
+            font-family:Arial, sans-serif;
+            padding-top:20px;
         }
     </style>
 </head>
 <body>
-<!-- 로딩 스피너 (Bootstrap 유틸리티만 사용) -->
+<!-- 로딩 스피너 -->
 <div
         id="loadingSpinner"
-        class="d-none position-fixed top-50 start-50 translate-middle d-flex justify-content-center align-items-center"
-        style="z-index: 1050;"
+        class="d-none position-fixed top-50 start-50 translate-middle
+           d-flex justify-content-center align-items-center"
+        style="z-index:1050;"
 >
     <div class="spinner-border text-dark" role="status">
         <span class="visually-hidden">로딩중...</span>
