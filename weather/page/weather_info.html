@@ -67,7 +67,6 @@
                     addressName = kw.address;
                 });
 
-            // 로딩 스피너 표시
             spinnerEl.classList.remove('d-none');
 
             fetch('../data/weather_address.json')
@@ -95,12 +94,12 @@
                 .then(res=>{ if(!res.ok) throw 'api-error'; return res.json(); })
                 .then(json=>{
                     const items = json.response?.body?.items?.item || [];
-                    if (!items.length) {
+                    if (!items.length){
                         contentEl.innerHTML = '<p class="text-center">단기예보 정보가 없습니다.</p>';
                         return;
                     }
 
-                    // 그룹핑 & 최신 항목 추출
+                    // 그룹핑 & 최신 추출
                     const byDate = {};
                     items.forEach(e=> (byDate[e.fcstDate] = byDate[e.fcstDate]||[]).push(e));
                     const latestByDate = {};
@@ -118,7 +117,7 @@
                     const todayDate  = allDates[0];
                     const otherDates = allDates.slice(1);
 
-                    // ── TODAY SECTION ──
+                    // TODAY SECTION
                     const today = latestByDate[todayDate];
                     const block1 = document.createElement('section');
                     block1.className = 'section section--today text-center mb-5';
@@ -134,8 +133,8 @@
           `;
                     contentEl.appendChild(block1);
 
-                    // ── WEEKLY SECTION ──
-                    if (otherDates.length) {
+                    // WEEKLY SECTION (2-column)
+                    if (otherDates.length){
                         const block2 = document.createElement('section');
                         block2.className = 'section section--weekly text-center mb-5';
                         block2.innerHTML = `<h3 class="section__title">주간 예보</h3>`;
@@ -153,10 +152,8 @@
                             const days = ['일','월','화','수','목','금','토'];
                             const label = days[dt.getDay()];
 
-                            // 각 행에 두 개씩 배치
                             const col = document.createElement('div');
                             col.className = 'col-6 mb-4';
-
                             col.innerHTML = `
                 <div class="card h-100 text-center p-3">
                   <div class="fw-bold mb-2">${label}</div>
@@ -182,18 +179,17 @@
                 })
                 .finally(()=> spinnerEl.classList.add('d-none'));
 
-            // helper: 발표일시 계산
             function computeBaseDateTime(){
                 const now=new Date(), h=now.getHours(), m=now.getMinutes();
                 const cand=[
                     {hh:23,mm:0,str:'2300'},{hh:20,mm:0,str:'2000'},
                     {hh:17,mm:0,str:'1700'},{hh:14,mm:0,str:'1400'},
-                    {hh:11,mm:0,str:'1100'},{hh:8, mm:0,str:'0800'},
-                    {hh:5, mm:0,str:'0500'},{hh:2, mm:0,str:'0200'}
+                    {hh:11,mm:0,str:'1100'},{hh:8,mm:0,str:'0800'},
+                    {hh:5,mm:0,str:'0500'},{hh:2,mm:0,str:'0200'}
                 ];
                 for (const c of cand){
-                    if (h>c.hh || (h===c.hh && m>=10)){
-                        const Y=now.getFullYear(), Mo=now.getMonth()+1, D=now.getDate();
+                    if (h>c.hh||(h===c.hh&&m>=10)){
+                        const Y=now.getFullYear(),Mo=now.getMonth()+1,D=now.getDate();
                         return {
                             base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
                             base_time:c.str
@@ -201,7 +197,7 @@
                     }
                 }
                 const yst=new Date(now-86400000),
-                    Y=yst.getFullYear(), Mo=yst.getMonth()+1, D=yst.getDate();
+                    Y=yst.getFullYear(),Mo=yst.getMonth()+1,D=yst.getDate();
                 return {
                     base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
                     base_time:'2300'
@@ -215,11 +211,14 @@
             margin: 0;
         }
         body {
+            /* 전체 배경 이미지 */
+            background: url('../img/bg_weather_info.png') no-repeat center center fixed;
+            background-size: cover;
+
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: #fff;
             color: #000;
             font-family: Arial, sans-serif;
             padding: 0 20px;
@@ -227,8 +226,11 @@
         .container {
             max-width: 600px;
             width: 100%;
+            /* 반투명 화이트 박스로 가독성 확보 */
+            background: rgba(255,255,255,0.85);
+            padding: 20px;
+            border-radius: 8px;
         }
-        /* section title styling */
         .section__title {
             border-bottom: 2px solid #007bff;
             display: inline-block;
@@ -237,18 +239,13 @@
             font-weight: 600;
             color: #007bff;
         }
-        /* weekly card sizing */
-        .weekly-card {
-            min-width: 100px;
-            max-width: 120px;
-        }
     </style>
 </head>
 <body>
 <!-- 로딩 스피너 -->
 <div id="loadingSpinner"
      class="d-none position-fixed top-50 start-50 translate-middle
-                d-flex justify-content-center align-items-center"
+              d-flex justify-content-center align-items-center"
      style="z-index:1050;">
     <div class="spinner-border text-dark" role="status">
         <span class="visually-hidden">로딩중...</span>
