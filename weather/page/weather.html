@@ -1,125 +1,140 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Weather Homepage</title>
     <link href="../css/bootstrap.min.css" rel="stylesheet">
     <script defer src="../js/bootstrap.min.js"></script>
-    <script defer>
-        let addresses = [];
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // JSON 파일 로드
-            fetch('../data/weather_keyword.json')
-                .then(r => r.json())
-                .then(jsonData => addresses = jsonData)
-                .catch(err => console.error('JSON 로드 실패:', err));
-
-            const inputEl       = document.getElementById('addressInput');
-            const suggestionsEl = document.getElementById('suggestions');
-            const formEl        = document.getElementById('searchForm');
-            const modalEl       = document.getElementById('resultModal');
-            const modalTitle    = modalEl.querySelector('.modal-title');
-            const modalBody     = modalEl.querySelector('.modal-body');
-
-            // 입력 이벤트: 자동완성
-            inputEl.addEventListener('input', () => {
-                const q = inputEl.value.trim();
-                suggestionsEl.innerHTML = '';
-                if (!q) return;
-                addresses
-                    .filter(item => item.address.includes(q))
-                    .forEach(item => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'list-group-item list-group-item-action';
-                        btn.textContent = item.address;
-                        btn.onclick = () => {
-                            inputEl.value = item.address;
-                            suggestionsEl.innerHTML = '';
-                        };
-                        suggestionsEl.appendChild(btn);
-                    });
-            });
-
-            // 외부 클릭 시 자동완성 닫기
-            document.addEventListener('click', e => {
-                if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
-                    suggestionsEl.innerHTML = '';
-                }
-            });
-
-            // 검색 제출
-            formEl.addEventListener('submit', e => {
-                e.preventDefault();
-                const val = inputEl.value.trim();
-                const found = addresses.find(item => item.address === val);
-                if (found) {
-                    window.location.href = `weather_info.html?code=${found.administrative_code}`;
-                } else {
-                    modalTitle.textContent = '검색 오류';
-                    modalBody.textContent = '주소를 정확하게 입력해주세요.';
-                    new bootstrap.Modal(modalEl).show();
-                }
-            });
-        });
-    </script>
     <style>
-        .suggestions-container { position: relative; }
+        /* 전체 페이지에 배경 이미지 적용 */
+        body {
+            background: url('../img/bg_weather.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* 입력 폼 박스 반투명 배경 */
+        #searchForm {
+            background: rgba(0,0,0,0.4);
+            padding: 2rem;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .form-control {
+            background: rgba(255,255,255,0.8);
+            border: 1px solid #ccc;
+        }
+        .btn-dark {
+            background-color: rgba(0,0,0,0.7);
+            border-color: #333;
+        }
+        /* 드롭다운 위치 및 스크롤 설정 */
+        .suggestions-container {
+            position: relative;
+        }
         #suggestions {
-            position: absolute; top: 100%; left: 0; right: 0;
-            z-index: 1000; max-height: 300px; overflow-y: auto;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(255,255,255,0.9);
         }
     </style>
 </head>
-<body class="bg-white d-flex justify-content-center align-items-center vh-100">
-<form id="searchForm" class="w-100" style="max-width:600px;" action="#" method="GET">
-    <!-- 오늘 문구: 주소 입력 위에 중앙 정렬 -->
-    <div class="row justify-content-center mb-2">
-        <div class="col-10 text-center">
-            <h2>오늘의 날씨</h2>
-        </div>
-    </div>
+<body>
+<form id="searchForm" class="text-center" action="#" method="GET">
+    <!-- 상단 문구 -->
+    <h1 class="mb-4">오늘의 날씨</h1>
 
-    <!-- 주소 입력 및 자동완성 -->
-    <div class="row justify-content-center mb-3">
-        <div class="col-10 suggestions-container">
-            <input
-                    type="text"
-                    id="addressInput"
-                    name="address"
-                    class="form-control form-control-lg border-dark bg-white text-dark"
-                    placeholder="주소를 입력하세요"
-                    autocomplete="off"
-                    required
-            >
-            <div id="suggestions" class="list-group"></div>
-        </div>
+    <div class="suggestions-container mb-3">
+        <input
+                type="text"
+                id="addressInput"
+                name="address"
+                class="form-control form-control-lg"
+                placeholder="주소를 입력하세요"
+                autocomplete="off"
+                required
+        >
+        <div id="suggestions" class="list-group"></div>
     </div>
-    <div class="row justify-content-center">
-        <div class="col-10">
-            <button type="submit" class="btn btn-dark btn-lg w-100">
-                검색
-            </button>
-        </div>
-    </div>
+    <button type="submit" class="btn btn-dark btn-lg w-100">검색</button>
 </form>
 
 <!-- 오류 모달 -->
-<div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+<div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content bg-light text-dark">
             <div class="modal-header">
-                <h5 class="modal-title" id="resultModalLabel">알림</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                <h5 class="modal-title">알림</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body"><!-- 오류 메시지 --></div>
+            <div class="modal-body"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    let addresses = [];
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('../data/weather_keyword.json')
+            .then(r => r.json())
+            .then(data => addresses = data)
+            .catch(console.error);
+
+        const inputEl = document.getElementById('addressInput');
+        const suggestionsEl = document.getElementById('suggestions');
+        const formEl = document.getElementById('searchForm');
+        const modalEl = new bootstrap.Modal(document.getElementById('resultModal'));
+        const modalBody = document.querySelector('#resultModal .modal-body');
+
+        inputEl.addEventListener('input', () => {
+            const q = inputEl.value.trim();
+            suggestionsEl.innerHTML = '';
+            if (!q) return;
+            addresses.filter(item => item.address.includes(q))
+                .forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'list-group-item list-group-item-action';
+                    btn.textContent = item.address;
+                    btn.onclick = () => {
+                        inputEl.value = item.address;
+                        suggestionsEl.innerHTML = '';
+                    };
+                    suggestionsEl.append(btn);
+                });
+        });
+
+        document.addEventListener('click', e => {
+            if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target))
+                suggestionsEl.innerHTML = '';
+        });
+
+        formEl.addEventListener('submit', e => {
+            e.preventDefault();
+            const val = inputEl.value.trim();
+            const match = addresses.find(item => item.address === val);
+            if (match) {
+                window.location.href = `weather_info.html?code=${match.administrative_code}`;
+            } else {
+                modalBody.textContent = '주소를 정확하게 입력해주세요.';
+                modalEl.show();
+            }
+        });
+    });
+</script>
 </body>
 </html>
