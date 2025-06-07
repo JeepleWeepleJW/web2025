@@ -8,73 +8,97 @@
     <script defer src="../js/bootstrap.min.js"></script>
     <script defer>
         document.addEventListener('DOMContentLoaded', () => {
-            const params     = new URLSearchParams(window.location.search);
-            const code       = params.get('code');
-            const modalEl    = document.getElementById('invalidModal');
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const modalEl = document.getElementById('invalidModal');
             const modalTitle = modalEl.querySelector('.modal-title');
-            const modalBody  = modalEl.querySelector('.modal-body');
-            const closeBtn   = document.getElementById('closeBtn');
+            const modalBody = modalEl.querySelector('.modal-body');
+            const closeBtn = document.getElementById('closeBtn');
             const confirmBtn = document.getElementById('confirmBtn');
-            const contentEl  = document.getElementById('content');
-            const spinnerEl  = document.getElementById('loadingSpinner');
+            const contentEl = document.getElementById('content');
+            const spinnerEl = document.getElementById('loadingSpinner');
 
-            function redirectToWeather() { window.location.href = 'weather.html'; }
-            function showInvalidModal(){
+            function redirectToWeather() {
+                window.location.href = 'weather.html';
+            }
+
+            function showInvalidModal() {
                 modalTitle.textContent = '잘못된 접근';
-                modalBody.textContent  = '잘못된 접근입니다.';
+                modalBody.textContent = '잘못된 접근입니다.';
                 new bootstrap.Modal(modalEl).show();
                 closeBtn.addEventListener('click', redirectToWeather);
                 confirmBtn.addEventListener('click', redirectToWeather);
             }
-            if (!code) { showInvalidModal(); return; }
 
-            const skyMap     = { '1':'맑음','3':'구름많음','4':'흐림' };
+            if (!code) {
+                showInvalidModal();
+                return;
+            }
+
+            // 날씨 아이콘 매핑
+            const skyMap = {'1': '맑음', '3': '구름많음', '4': '흐림'};
             const ICON_SUNNY = '../img/ic_weather_sunny.png';
             const ICON_CLOUD = '../img/ic_weather_cloud.png';
-            const ICON_RAIN  = '../img/ic_weather_rain.png';
-            const ICON_SNOW  = '../img/ic_weather_snow.png';
+            const ICON_RAIN = '../img/ic_weather_rain.png';
+            const ICON_SNOW = '../img/ic_weather_snow.png';
 
-            function getWeatherIcon(entry){
+            // 등급 → 설명
+            const gradeMap = {
+                '1': '좋음',
+                '2': '보통',
+                '3': '나쁨',
+                '4': '매우나쁨'
+            };
+
+            function getWeatherIcon(entry) {
                 const pty = entry.PTY?.fcstValue;
-                const pop = parseInt(entry.POP?.fcstValue,10) || 0;
+                const pop = parseInt(entry.POP?.fcstValue, 10) || 0;
                 const sky = entry.SKY?.fcstValue;
-                if (['1','2','4'].includes(String(pty))) return ICON_RAIN;
-                if (String(pty) === '3')            return ICON_SNOW;
-                if (pop >= 50)                      return ICON_RAIN;
-                if (String(sky) === '1')            return ICON_SUNNY;
-                if (['3','4'].includes(String(sky)))return ICON_CLOUD;
+                if (['1', '2', '4'].includes(String(pty))) return ICON_RAIN;
+                if (String(pty) === '3') return ICON_SNOW;
+                if (pop >= 50) return ICON_RAIN;
+                if (String(sky) === '1') return ICON_SUNNY;
+                if (['3', '4'].includes(String(sky))) return ICON_CLOUD;
                 return ICON_CLOUD;
             }
 
-            function getClothing(temp){
+            function getClothing(temp) {
                 const t = parseFloat(temp);
                 if (t >= 28) return '반팔, 반바지, 치마, 린넨옷';
                 if (t >= 23) return '반팔, 얇은 셔츠, 반바지, 면바지';
                 if (t >= 20) return '블라우스, 긴팔티, 면바지, 슬랙스';
                 if (t >= 17) return '얇은 가디건, 니트, 맨투맨, 후드, 긴 바지';
                 if (t >= 12) return '자켓, 가디건, 청자켓, 니트, 스타킹, 청바지';
-                if (t >= 9)  return '트렌치코트, 야상, 점퍼, 스타킹, 기모바지';
-                if (t >= 5)  return '울 코트, 히트텍, 가죽옷, 기모';
+                if (t >= 9) return '트렌치코트, 야상, 점퍼, 스타킹, 기모바지';
+                if (t >= 5) return '울 코트, 히트텍, 가죽옷, 기모';
                 return '패딩, 두꺼운 코트, 누빔옷, 기모';
             }
 
             let addressName = '';
             fetch('../data/weather_keyword.json')
-                .then(r=>r.json())
-                .then(data=>{
-                    const kw = data.find(item=>String(item.administrative_code)===code);
-                    if (!kw) { showInvalidModal(); throw 'no-address-kw'; }
+                .then(r => r.json())
+                .then(data => {
+                    const kw = data.find(item => String(item.administrative_code) === code);
+                    if (!kw) {
+                        showInvalidModal();
+                        throw 'no-address-kw';
+                    }
                     addressName = kw.address;
                 });
 
             spinnerEl.classList.remove('d-none');
 
+            // 1) 날씨 주소 정보 로드
             fetch('../data/weather_address.json')
-                .then(r=>r.json())
-                .then(data=>{
-                    const select_address = data.find(item=>String(item.administrative_code)===code);
-                    if (!select_address) { showInvalidModal(); throw 'no-address'; }
-                    const { base_date, base_time } = computeBaseDateTime();
+                .then(r => r.json())
+                .then(data => {
+                    const select_address = data.find(item => String(item.administrative_code) === code);
+                    if (!select_address) {
+                        showInvalidModal();
+                        throw 'no-address';
+                    }
+
+                    const {base_date, base_time} = computeBaseDateTime();
                     const nx = Math.round(select_address.lat_decimal);
                     const ny = Math.round(select_address.lon_decimal);
 
@@ -91,33 +115,85 @@
 
                     return fetch(apiUrl.toString());
                 })
-                .then(res=>{ if(!res.ok) throw 'api-error'; return res.json(); })
-                .then(json=>{
+                .then(res => {
+                    if (!res.ok) throw 'api-error';
+                    return res.json();
+                })
+                .then(json => {
                     const items = json.response?.body?.items?.item || [];
-                    if (!items.length){
+                    if (!items.length) {
                         contentEl.innerHTML = '<p class="text-center">단기예보 정보가 없습니다.</p>';
                         return;
                     }
-
-                    // 그룹핑 & 최신 추출
+                    // 그룹핑 & 최신 항목 추출
                     const byDate = {};
-                    items.forEach(e=> (byDate[e.fcstDate] = byDate[e.fcstDate]||[]).push(e));
+                    items.forEach(e => (byDate[e.fcstDate] = byDate[e.fcstDate] || []).push(e));
                     const latestByDate = {};
-                    Object.keys(byDate).sort().forEach(date=>{
+                    Object.keys(byDate).sort().forEach(date => {
                         const latestThis = {};
-                        byDate[date].forEach(e=>{
-                            if (!latestThis[e.category] || e.fcstTime > latestThis[e.category].fcstTime){
+                        byDate[date].forEach(e => {
+                            if (!latestThis[e.category] || e.fcstTime > latestThis[e.category].fcstTime) {
                                 latestThis[e.category] = e;
                             }
                         });
                         latestByDate[date] = latestThis;
                     });
 
-                    const allDates   = Object.keys(latestByDate).sort();
-                    const todayDate  = allDates[0];
+                    const allDates = Object.keys(latestByDate).sort();
+                    const todayDate = allDates[0];
                     const otherDates = allDates.slice(1);
 
-                    // TODAY SECTION
+                    // 2) 미세먼지 API 호출 (시도별)
+                    //    시도 이름 추출 ("서울특별시 광진구" → "서울")
+                    const regionMap = {
+                        "서울특별시": "서울",
+                        "부산광역시": "부산",
+                        "대구광역시": "대구",
+                        "인천광역시": "인천",
+                        "광주광역시": "광주",
+                        "대전광역시": "대전",
+                        "울산광역시": "울산",
+                        "세종특별자치시": "세종",
+                        "경기도": "경기",
+                        "강원도": "강원",
+                        "충청북도": "충북",
+                        "충청남도": "충남",
+                        "전라북도": "전북",
+                        "전라남도": "전남",
+                        "경상북도": "경북",
+                        "경상남도": "경남",
+                        "제주특별자치도": "제주"
+                    };
+
+                    // addressName이 매핑 키로 시작하는 전체 이름을 찾아서 short name으로 변환
+                    const fullName = Object.keys(regionMap).find(name => addressName.startsWith(name));
+                    const sido = fullName
+                        ? regionMap[fullName]
+                        : "";  // 혹은 기본값 지정
+
+                    console.log("위치 : " + sido)
+
+                    const dustUrl = new URL('http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty');
+                    const serviceKey = 'XBi6TBHmrnZ0J1zY7Xu4PpdsrKrOXjxRm8l7LSDxsdPpF0RMvZUVVhQF1nYQRQ87en0GXMRwD4y/XcPkr+BXAw==';
+                    dustUrl.searchParams.append('serviceKey', serviceKey);
+                    dustUrl.searchParams.append('returnType', 'JSON');
+                    dustUrl.searchParams.append('numOfRows', 1000);
+                    dustUrl.searchParams.append('pageNo', 1);
+                    dustUrl.searchParams.append('sidoName', sido);
+                    dustUrl.searchParams.append('ver', '1.0');
+
+                    return fetch(dustUrl.toString())
+                        .then(res => res.json())
+                        .then(dustJson => {
+                            const dustItems = dustJson.response?.body?.items || [];
+                            const dustInfo = dustItems[0] || {};
+                            const pm10Grade = String(dustInfo.pm10Grade);
+                            const pm25Grade = String(dustInfo.pm25Grade);
+                            return {latestByDate, todayDate, otherDates, pm10Grade, pm25Grade};
+                        });
+                })
+                .then(({latestByDate, todayDate, otherDates, pm10Grade, pm25Grade}) => {
+                    // ── TODAY SECTION ──
                     const today = latestByDate[todayDate];
                     const block1 = document.createElement('section');
                     block1.className = 'section section--today text-center mb-5';
@@ -129,12 +205,14 @@
               <span class="display-1 ms-3">${today.TMP.fcstValue}°</span>
             </div>
             <div class="mb-1"><strong>강수확률:</strong> ${today.POP.fcstValue}%</div>
+            <div class="mb-1"><strong>미세먼지:</strong> ${gradeMap[pm10Grade] || '-'}</div>
+            <div class="mb-1"><strong>초미세먼지:</strong> ${gradeMap[pm25Grade] || '-'}</div>
             <div><strong>추천옷차림:</strong> ${getClothing(today.TMP.fcstValue)}</div>
           `;
                     contentEl.appendChild(block1);
 
-                    // WEEKLY SECTION (2-column)
-                    if (otherDates.length){
+                    // ── WEEKLY SECTION (2열) ──
+                    if (otherDates.length) {
                         const block2 = document.createElement('section');
                         block2.className = 'section section--weekly text-center mb-5';
                         block2.innerHTML = `<h3 class="section__title">주간 예보</h3>`;
@@ -142,14 +220,10 @@
                         const row = document.createElement('div');
                         row.className = 'row';
 
-                        otherDates.forEach(date=>{
+                        otherDates.forEach(date => {
                             const d = latestByDate[date];
-                            const dt = new Date(
-                                +date.slice(0,4),
-                                +date.slice(4,6)-1,
-                                +date.slice(6,8)
-                            );
-                            const days = ['일','월','화','수','목','금','토'];
+                            const dt = new Date(date.slice(0, 4), date.slice(4, 6) - 1, date.slice(6, 8));
+                            const days = ['일', '월', '화', '수', '목', '금', '토'];
                             const label = days[dt.getDay()];
 
                             const col = document.createElement('div');
@@ -159,8 +233,8 @@
                   <div class="fw-bold mb-2">${label}</div>
                   <img src="${getWeatherIcon(d)}" class="mx-auto d-block mb-2" style="width:96px;">
                   <div class="d-flex justify-content-center mb-2">
-                    <span class="text-primary me-2">${d.TMN?.fcstValue||d.TMP.fcstValue}°</span>
-                    <span class="text-danger">${d.TMX?.fcstValue||d.TMP.fcstValue}°</span>
+                    <span class="text-primary me-2">${d.TMN?.fcstValue || d.TMP.fcstValue}°</span>
+                    <span class="text-danger">${d.TMX?.fcstValue || d.TMP.fcstValue}°</span>
                   </div>
                   <div class="small mb-1"><strong>강수확률:</strong> ${d.POP.fcstValue}%</div>
                   <div class="small"><strong>추천옷차림:</strong> ${getClothing(d.TMP?.fcstValue)}</div>
@@ -172,35 +246,35 @@
                         contentEl.appendChild(block2);
                     }
                 })
-                .catch(err=>{
+                .catch(err => {
                     if (err !== 'no-address') {
                         contentEl.innerHTML = '<p class="text-center text-danger">API 호출 중 오류가 발생했습니다.</p>';
                     }
                 })
-                .finally(()=> spinnerEl.classList.add('d-none'));
+                .finally(() => spinnerEl.classList.add('d-none'));
 
-            function computeBaseDateTime(){
-                const now=new Date(), h=now.getHours(), m=now.getMinutes();
-                const cand=[
-                    {hh:23,mm:0,str:'2300'},{hh:20,mm:0,str:'2000'},
-                    {hh:17,mm:0,str:'1700'},{hh:14,mm:0,str:'1400'},
-                    {hh:11,mm:0,str:'1100'},{hh:8,mm:0,str:'0800'},
-                    {hh:5,mm:0,str:'0500'},{hh:2,mm:0,str:'0200'}
+            // helper: 발표일시 계산
+            function computeBaseDateTime() {
+                const now = new Date(), h = now.getHours(), m = now.getMinutes();
+                const cand = [
+                    {hh: 23, mm: 0, str: '2300'}, {hh: 20, mm: 0, str: '2000'},
+                    {hh: 17, mm: 0, str: '1700'}, {hh: 14, mm: 0, str: '1400'},
+                    {hh: 11, mm: 0, str: '1100'}, {hh: 8, mm: 0, str: '0800'},
+                    {hh: 5, mm: 0, str: '0500'}, {hh: 2, mm: 0, str: '0200'}
                 ];
-                for (const c of cand){
-                    if (h>c.hh||(h===c.hh&&m>=10)){
-                        const Y=now.getFullYear(),Mo=now.getMonth()+1,D=now.getDate();
+                for (const c of cand) {
+                    if (h > c.hh || (h === c.hh && m >= 10)) {
+                        const Y = now.getFullYear(), Mo = now.getMonth() + 1, D = now.getDate();
                         return {
-                            base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
-                            base_time:c.str
+                            base_date: `${Y}${String(Mo).padStart(2, '0')}${String(D).padStart(2, '0')}`,
+                            base_time: c.str
                         };
                     }
                 }
-                const yst=new Date(now-86400000),
-                    Y=yst.getFullYear(),Mo=yst.getMonth()+1,D=yst.getDate();
+                const yst = new Date(now - 86400000), Y = yst.getFullYear(), Mo = yst.getMonth() + 1, D = yst.getDate();
                 return {
-                    base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,
-                    base_time:'2300'
+                    base_date: `${Y}${String(Mo).padStart(2, '0')}${String(D).padStart(2, '0')}`,
+                    base_time: '2300'
                 };
             }
         });
@@ -210,11 +284,10 @@
             height: 100%;
             margin: 0;
         }
+
         body {
-            /* 전체 배경 이미지 */
             background: url('../img/bg_weather_info.png') no-repeat center center fixed;
             background-size: cover;
-
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -223,14 +296,15 @@
             font-family: Arial, sans-serif;
             padding: 0 20px;
         }
+
         .container {
             max-width: 600px;
             width: 100%;
-            /* 반투명 화이트 박스로 가독성 확보 */
-            background: rgba(255,255,255,0.85);
+            background: rgba(255, 255, 255, 0.85);
             padding: 20px;
             border-radius: 8px;
         }
+
         .section__title {
             border-bottom: 2px solid #007bff;
             display: inline-block;
@@ -245,7 +319,7 @@
 <!-- 로딩 스피너 -->
 <div id="loadingSpinner"
      class="d-none position-fixed top-50 start-50 translate-middle
-              d-flex justify-content-center align-items-center"
+                d-flex justify-content-center align-items-center"
      style="z-index:1050;">
     <div class="spinner-border text-dark" role="status">
         <span class="visually-hidden">로딩중...</span>
