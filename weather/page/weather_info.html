@@ -87,7 +87,9 @@
                         return;
                     }
                     const byDate = {};
-                    items.forEach(e => (byDate[e.fcstDate] = byDate[e.fcstDate]||[]).push(e));
+                    items.forEach(e => {
+                        (byDate[e.fcstDate] = byDate[e.fcstDate]||[]).push(e);
+                    });
                     const latestByDate = {};
                     Object.keys(byDate).sort().forEach(date => {
                         const latestThis = {};
@@ -125,27 +127,30 @@
                         </div>`;
                     contentEl.appendChild(block1);
 
-                    // 주간 예보 - 각 요일별 한 줄 표시
+                    // 주간 예보 - 1행에 각 날짜 카드 표시
                     if (otherDates.length) {
                         const block2 = document.createElement('div');
                         block2.className = 'mb-5';
                         block2.innerHTML = '<h3>주간 예보</h3>';
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'd-flex w-100';
                         otherDates.forEach(date => {
                             const d = latestByDate[date];
-                            const row = document.createElement('div');
-                            row.className = 'd-flex align-items-center justify-content-between py-2 border-bottom';
-                            row.innerHTML = `
-                                <div>${formatDateYM(date)}</div>
-                                <div class="d-flex align-items-center">
+                            const card = document.createElement('div');
+                            card.className = 'card flex-fill text-center mx-1 p-2';
+                            card.innerHTML = `
+                                <div class="fw-bold mb-1">${formatDateYM(date)}</div>
+                                <div class="d-flex justify-content-center align-items-center mb-1">
                                     <small class="me-1 text-primary">${d.POP.fcstValue}%</small>
-                                    <img src="${getWeatherIcon(d)}" style="width:24px;">
+                                    <img src="${getWeatherIcon(d)}" alt="icon" style="width:24px;">
                                 </div>
-                                <div>
+                                <div class="d-flex justify-content-center align-items-center">
                                     <span class="text-primary me-1">${d.TMN?.fcstValue||d.TMP.fcstValue}°</span>
                                     <span class="text-danger">${d.TMX?.fcstValue||d.TMP.fcstValue}°</span>
                                 </div>`;
-                            block2.appendChild(row);
+                            wrapper.appendChild(card);
                         });
+                        block2.appendChild(wrapper);
                         contentEl.appendChild(block2);
                     }
                 })
@@ -162,13 +167,13 @@
                     {hh:5,mm:0,str:'0500'},{hh:2,mm:0,str:'0200'}
                 ];
                 for (let c of cand) {
-                    if (h>c.hh || (h===c.hh && m>=10)) {
-                        const Y=now.getFullYear(), Mo=now.getMonth()+1, D=now.getDate();
-                        return {base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,base_time:c.str};
+                    if (h > c.hh || (h === c.hh && m >= 10)) {
+                        const Y = now.getFullYear(), Mo = now.getMonth()+1, D = now.getDate();
+                        return { base_date: `${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`, base_time: c.str };
                     }
                 }
-                const yst=new Date(now-86400000), Y=yst.getFullYear(), Mo=yst.getMonth()+1, D=yst.getDate();
-                return {base_date:`${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`,base_time:'2300'};
+                const yst = new Date(now - 86400000), Y = yst.getFullYear(), Mo = yst.getMonth()+1, D = yst.getDate();
+                return { base_date: `${Y}${String(Mo).padStart(2,'0')}${String(D).padStart(2,'0')}`, base_time:'2300' };
             }
         });
     </script>
