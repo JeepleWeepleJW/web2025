@@ -124,7 +124,7 @@
                     const serviceKey = 'XBi6TBHmrnZ0J1zY7Xu4PpdsrKrOXjxRm8l7LSDxsdPpF0RMvZUVVhQF1nYQRQ87en0GXMRwD4y/XcPkr+BXAw==';
                     const full = Object.keys(regionMap).find(k=>addressName.startsWith(k));
                     const sido = full ? regionMap[full] : '';
-                    const dustUrl = new URL('http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty');
+                    const dustUrl = new URL('https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty');
                     dustUrl.searchParams.append('serviceKey', serviceKey);
                     dustUrl.searchParams.append('returnType','JSON');
                     dustUrl.searchParams.append('numOfRows','1');
